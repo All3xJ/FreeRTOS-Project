@@ -12,9 +12,10 @@ CFLAGS += $(INCLUDE_DIRS) -nostartfiles -ffreestanding -mthumb -mcpu=cortex-m3 \
 		  -Wall -Wextra -g3 -O0 -ffunction-sections -fdata-sections \
 		  -MMD -MP -MF"$(@:%.o=%.d)" -MT $@
 
+# Change this lines with to import the correct libraries (if needed)
 INCLUDE_DIRS += -I headers \
                 -I source \
-		-I /Applications/ARM/arm-none-eabi/include/c++/10.3.1 \ # Change this line with the correct binary (if needed)
+				-I /Applications/ARM/arm-none-eabi/include/c++/10.3.1 \
 
 # Source files
 SOURCE_DIR := source
