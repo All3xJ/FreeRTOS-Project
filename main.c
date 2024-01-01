@@ -59,9 +59,9 @@ void main( void )
 	prvUARTInit();
 
 	xTaskCreate(vTaskFunction, "Task1", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-  xTaskCreate(vTaskFunction, "Task2", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-  xTaskCreate(vTaskFunction, "Task3", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
-  vTaskStartScheduler();
+    xTaskCreate(vTaskFunction, "Task2", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+  	xTaskCreate(vTaskFunction, "Task3", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
+  	vTaskStartScheduler();
 
 }
 /*-----------------------------------------------------------*/
@@ -252,4 +252,5 @@ void vTaskFunction(void *pvParameters) {
     (void)pvParameters; // Ignora l'avviso di parametro non utilizzato
     printf("La task %s in esecuzione!\n", taskName);
     vTaskDelay(pdMS_TO_TICKS(1000)); // Attendi 1000 millisecondi
+	vTaskDelete(NULL);
 }
