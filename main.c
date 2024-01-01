@@ -58,6 +58,8 @@ void main( void )
 	/* Hardware initialisation.  printf() output uses the UART for IO. */
 	prvUARTInit();
 
+	printf("Prova\r\n");
+
 	xTaskCreate(vTaskFunction, "Task1", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
     xTaskCreate(vTaskFunction, "Task2", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
   	xTaskCreate(vTaskFunction, "Task3", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
@@ -250,7 +252,7 @@ void *malloc( size_t size )
 void vTaskFunction(void *pvParameters) {
     const char *taskName = pcTaskGetName(NULL);
     (void)pvParameters; // Ignora l'avviso di parametro non utilizzato
-    printf("La task %s in esecuzione!\n", taskName);
+    printf("La task %s in esecuzione!\r\n", taskName);
     vTaskDelay(pdMS_TO_TICKS(1000)); // Attendi 1000 millisecondi
 	vTaskDelete(NULL);
 }
