@@ -31,6 +31,7 @@
 /* Standard includes. */
 #include <stdio.h>
 #include <string.h>
+#include <SMM_MPS2.h>
 
 /* printf() output uses the UART.  These constants define the addresses of the
 required UART registers. */
@@ -40,6 +41,9 @@ required UART registers. */
 #define UART0_CTRL		( * ( ( ( volatile uint32_t * )( UART0_ADDRESS + 8UL ) ) ) )
 #define UART0_BAUDDIV	( * ( ( ( volatile uint32_t * )( UART0_ADDRESS + 16UL ) ) ) )
 #define TX_BUFFER_MASK	( 1UL )
+#define UART0_INTSTATUS		( * ( ( ( volatile uint32_t * )( UART0_ADDRESS + 12UL ) ) ) )
+
+#define LED_PORT		(MPS2_SCC->LEDS)
 
 void vFullDemoTickHookFunction( void );
 
@@ -47,6 +51,8 @@ void vFullDemoTickHookFunction( void );
  * Printf() output is sent to the serial port.  Initialise the serial hardware.
  */
 static void prvUARTInit( void );
+
+int initializeLED(void);
 
 /*-----------------------------------------------------------*/
 
@@ -57,6 +63,7 @@ void main( void )
 
 	/* Hardware initialisation.  printf() output uses the UART for IO. */
 	prvUARTInit();
+	initializeLED();
 
 	printf("Prova\r\n");
 
@@ -213,7 +220,7 @@ static StackType_t uxTimerTaskStack[ configTIMER_TASK_STACK_DEPTH ];
 static void prvUARTInit( void )
 {
 	UART0_BAUDDIV = 16;
-	UART0_CTRL = 1;
+	UART0_CTRL = 11;	// questo abilita RX, TX e RX interrupt
 }
 /*-----------------------------------------------------------*/
 
@@ -248,11 +255,51 @@ void *malloc( size_t size )
 	for( ;; );
 
 }
- 
+
+
+int initializeLED(void){
+	LED_PORT = 0U;	// punto al contenuto dell'address LED_PORT e setto a 0 in modo da spegnere leds
+
+	return 0;
+}
+
+int Switch_Led_On (int ledN){
+	if (ledN <= 7 && ledN >=0){	// controllo se ho ricevuto input corretto
+		LED_PORT |=  (1U << ledN);
+		return 0;
+	}
+
+	return -1;
+}
+
+
+
+
+
+
+
 void vTaskFunction(void *pvParameters) {
     const char *taskName = pcTaskGetName(NULL);
     (void)pvParameters; // Ignora l'avviso di parametro non utilizzato
     printf("La task %s in esecuzione!\r\n", taskName);
     vTaskDelay(pdMS_TO_TICKS(1000)); // Attendi 1000 millisecondi
+	
+	Switch_Led_On(1);
+
+	
+	while(1){
+
+		if (UART0_INTSTATUS == 2){
+			char c = UART0_DATA;
+			// Inserire il carattere nella coda
+			printf("%c",c);
+			UART0_INTSTATUS = 2;
+		}
+	}
+	
+
 	vTaskDelete(NULL);
 }
+
+
+
