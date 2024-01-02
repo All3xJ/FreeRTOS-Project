@@ -264,8 +264,8 @@ int initializeLED(void){
 }
 
 int Switch_Led_On (int ledN){
-	if (ledN <= 7 && ledN >=0){	// controllo se ho ricevuto input corretto
-		LED_PORT |=  (1U << ledN);
+	if (ledN <= 7 && ledN >=0){		// controllo se ho ricevuto input corretto
+		LED_PORT |=  (1U << ledN);	// metto a livello alto il pin del led, facendolo accendere
 		return 0;
 	}
 
@@ -289,11 +289,10 @@ void vTaskFunction(void *pvParameters) {
 	
 	while(1){
 
-		if (UART0_INTSTATUS == 2){
-			char c = UART0_DATA;
-			// Inserire il carattere nella coda
-			printf("%c",c);
-			UART0_INTSTATUS = 2;
+		if (UART0_INTSTATUS == 2){	// se secondo bit è a 1 significa che c'è stato un rx interrupt
+			char c = UART0_DATA;	// leggo carattere che è stato scritto dall'utente
+			printf("%c",c);			// faccio echo del carattere
+			UART0_INTSTATUS = 2;	// metto secondo bit a 1 per pulire interrupt
 		}
 	}
 	
