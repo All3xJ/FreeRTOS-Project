@@ -248,7 +248,7 @@ void *malloc( size_t size )
 	for( ;; );
 
 }
-
+ 
 void vTaskFunction(void *pvParameters) {
     const char *taskName = pcTaskGetName(NULL);
     (void)pvParameters; // Ignora l'avviso di parametro non utilizzato
