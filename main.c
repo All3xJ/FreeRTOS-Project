@@ -50,6 +50,20 @@ static void prvUARTInit( void );
 
 /*-----------------------------------------------------------*/
 
+
+void printHeapStats(HeapStats_t *pstats)
+{
+    printf(" xAvailableHeapSpaceInBytes - %u", pstats->xAvailableHeapSpaceInBytes, "\n" );
+    printf(" xSizeOfLargestFreeBlockInBytes - %u", pstats->xSizeOfLargestFreeBlockInBytes, "\n");
+    printf(" xSizeOfSmallestFreeBlockInBytes - %u", pstats->xSizeOfSmallestFreeBlockInBytes, "\n");
+    printf(" xNumberOfFreeBlocks - %u", pstats->xNumberOfFreeBlocks, "\n");
+    printf(" xMinimumEverFreeBytesRemaining - %u", pstats->xMinimumEverFreeBytesRemaining, "\n");
+    printf(" xNumberOfSuccessfulAllocations - %u", pstats->xNumberOfSuccessfulAllocations, "\n");
+    printf(" xNumberOfSuccessfulFrees - %u", pstats->xNumberOfSuccessfulFrees, "\n\n");
+}
+
+/*-----------------------------------------------------------*/
+
 void main( void )
 {
 	/* See https://www.freertos.org/freertos-on-qemu-mps2-an385-model.html for
@@ -63,6 +77,29 @@ void main( void )
 	xTaskCreate(vTaskFunction, "Task1", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
     xTaskCreate(vTaskFunction, "Task2", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
   	xTaskCreate(vTaskFunction, "Task3", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
+	
+	HeapStats_t heapStats;
+	vPortGetHeapStats(&heapStats);
+	printHeapStats(&heapStats);
+
+
+
+	vPortGetHeapStats(&heapStats);
+	printHeapStats(&heapStats);
+
+		// Simulazione di un'allocazione di memoria 10B
+	void *allocatedMemory = pvPortMalloc(10);
+
+	if (allocatedMemory != NULL)
+	{
+			printf(" Memory allocated successfully.\n");
+			vPortFree(allocatedMemory);
+	}
+
+   
+
+    vPortGetHeapStats(&heapStats);
+    printHeapStats(&heapStats);
   	vTaskStartScheduler();
 
 }
@@ -252,7 +289,7 @@ void *malloc( size_t size )
 void vTaskFunction(void *pvParameters) {
     const char *taskName = pcTaskGetName(NULL);
     (void)pvParameters; // Ignora l'avviso di parametro non utilizzato
-    printf("La task %s in esecuzione!\r\n", taskName);
+    printf(" La task %s in esecuzione!\r\n", taskName);
     vTaskDelay(pdMS_TO_TICKS(1000)); // Attendi 1000 millisecondi
 	vTaskDelete(NULL);
 }
