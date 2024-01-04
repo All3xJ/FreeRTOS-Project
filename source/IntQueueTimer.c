@@ -42,19 +42,34 @@ volatile uint32_t ulNest, ulNestCount;
 
 /*-----------------------------------------------------------*/
 
+#if (DEBUG_WITH_STATS==1)	// we need these two functions only if we enabled stats. these functions are "linked" to FreeRTOS port keywords inside "FreeRTOSConfig.h"
+void RTOS_AppConfigureTimerForRuntimeStats(void) {
+	ulNestCount = 0;	// initializes the counter to 0
+}
+
+uint32_t RTOS_AppGetRuntimeCounterValueFromISR(void) {
+	return ulNestCount;	// returns the reached counter value
+}
+#endif
+
 void TIMER0_Handler( void )
 {
 	/* Clear interrupt. */
 	CMSDK_TIMER0->INTCLEAR = ( 1ul <<  0 );
-	if( ulNest > 0 )
-	{
-		/* This interrupt occurred in between the nesting count being incremented
-		and decremented in the TIMER1_Handler.  Keep a count of the number of
-		times this happens as its printed out by the check task in main_full.c.*/
-		ulNestCount++;
-	}
-	portEND_SWITCHING_ISR( xSecondTimerHandler() );
+
+	ulNestCount++;	// we increment the counter that will be used to calculate the statistics for each task
+
+	// commento questa parte perchè non è ciò che ci serve
+	// if( ulNest > 0 )
+	// {
+	// 	/* This interrupt occurred in between the nesting count being incremented
+	// 	and decremented in the TIMER1_Handler.  Keep a count of the number of
+	// 	times this happens as its printed out by the check task in main_full.c.*/
+	// 	ulNestCount++;
+	// }
+	//portEND_SWITCHING_ISR( xSecondTimerHandler() );
 }
+
 /*-----------------------------------------------------------*/
 
 void TIMER1_Handler( void )

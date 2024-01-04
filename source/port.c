@@ -166,7 +166,7 @@ static UBaseType_t uxCriticalNesting = 0xaaaaaaaa;
  * a priority above configMAX_SYSCALL_INTERRUPT_PRIORITY.
  */
 #if ( configASSERT_DEFINED == 1 )
-    static uint8_t ucMaxSysCallPriority = 0;
+    static uint8_t ucMaxSysCallPriority = 0;    // poi verrà modificato a 5 in "xPortStartScheduler"
     static uint32_t ulMaxPRIGROUPValue = 0;
     static const volatile uint8_t * const pcInterruptPriorityRegisters = ( const volatile uint8_t * const ) portNVIC_IP_REGISTERS_OFFSET_16;
 #endif /* configASSERT_DEFINED */
@@ -730,7 +730,7 @@ __attribute__( ( weak ) ) void vPortSetupTimerInterrupt( void )
              *
              * Interrupts that	use the FreeRTOS API must not be left at their
              * default priority of	zero as that is the highest possible priority,
-             * which is guaranteed to be above configMAX_SYSCALL_INTERRUPT_PRIORITY,
+             * which is guaranteed to be (ndr logically) above configMAX_SYSCALL_INTERRUPT_PRIORITY,
              * and	therefore also guaranteed to be invalid.
              *
              * FreeRTOS maintains separate thread and ISR API functions to ensure
@@ -739,7 +739,8 @@ __attribute__( ( weak ) ) void vPortSetupTimerInterrupt( void )
              * The following links provide detailed information:
              * https://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html
              * https://www.FreeRTOS.org/FAQHelp.html */
-            configASSERT( ucCurrentPriority >= ucMaxSysCallPriority );
+
+            configASSERT( ucCurrentPriority >= ucMaxSysCallPriority );  // here if we had not changed the priority of the uart interrupt it would have done 0>=5 => no. and so assert would have failed
         }
 
         /* Priority grouping:  The interrupt controller (NVIC) allows the bits

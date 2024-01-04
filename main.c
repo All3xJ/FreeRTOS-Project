@@ -27,6 +27,8 @@
 /* FreeRTOS includes. */
 #include "FreeRTOS.h"
 #include "task.h"
+#include "queue.h"
+#include "semphr.h"
 
 /* Standard includes. */
 #include <stdio.h>
@@ -41,18 +43,38 @@ required UART registers. */
 #define UART0_CTRL		( * ( ( ( volatile uint32_t * )( UART0_ADDRESS + 8UL ) ) ) )
 #define UART0_BAUDDIV	( * ( ( ( volatile uint32_t * )( UART0_ADDRESS + 16UL ) ) ) )
 #define TX_BUFFER_MASK	( 1UL )
-#define UART0_INTSTATUS		( * ( ( ( volatile uint32_t * )( UART0_ADDRESS + 12UL ) ) ) )
+#define UART0_INTSTATUS	( * ( ( ( volatile uint32_t * )( UART0_ADDRESS + 12UL ) ) ) )
 
-#define LED_PORT		(MPS2_SCC->LEDS)
+#define LED_PORT		(MPS2_SCC->LEDS)	// this is the address of the led port used to control the leds
 
-void vFullDemoTickHookFunction( void );
+#define NORMALBUFLEN	50					// size of a "general purpose" buffer
+
+#if (DEBUG_WITH_STATS==1)
+	#define DEBUGSTATSBUFLEN 800			// we will use the buffer to enter task stats so it needs to be large enough
+
+#endif
+
 
 /*
  * Printf() output is sent to the serial port.  Initialise the serial hardware.
  */
 static void prvUARTInit( void );
 
-int initializeLED(void);
+void initializeLED(void);
+
+#if (DEBUG_WITH_STATS==1)
+void initializeTimer0(unsigned int ticks);	// we use timer only for stats, if we don't want stats then it's not used and so we don't need to initialize it.
+#endif
+
+static void vLEDTask( void *pvParameter );
+
+void executeCommand( char command[] );
+
+static void vCommandlineTask( void *pvParameter );
+
+xQueueHandle xQueueUART;
+
+TaskHandle_t xHandleLED;	// we need it so that we can control the led task. so that we can resume it (since it pauses every time it completes the Knight Rider animation)
 
 /*-----------------------------------------------------------*/
 
@@ -64,12 +86,20 @@ void main( void )
 	/* Hardware initialisation.  printf() output uses the UART for IO. */
 	prvUARTInit();
 	initializeLED();
+	#if (DEBUG_WITH_STATS==1)
+	initializeTimer0(configTICK_RATE_HZ*10);	// we use timer only for stats, if we don't want stats then it's not used and so we don't need to initialize it.
+	#endif
 
-	printf("Prova\r\n");
 
-	xTaskCreate(vTaskFunction, "Task1", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-    xTaskCreate(vTaskFunction, "Task2", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-  	xTaskCreate(vTaskFunction, "Task3", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
+	#if (DEBUG_WITH_STATS==1)	// if we want stats, then we need a larger stack to hold the buffer (DEBUGSTATSBUFLEN) + 100 for any other variables used
+	xTaskCreate(vCommandlineTask, "Commandline Task", configMINIMAL_STACK_SIZE+DEBUGSTATSBUFLEN+100, NULL, tskIDLE_PRIORITY + 1, NULL);
+	#else
+	xTaskCreate(vCommandlineTask, "Commandline Task", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+	#endif
+
+	xTaskCreate(vLEDTask, "Led Task", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, &xHandleLED);
+
+
   	vTaskStartScheduler();
 
 }
@@ -220,27 +250,32 @@ static StackType_t uxTimerTaskStack[ configTIMER_TASK_STACK_DEPTH ];
 static void prvUARTInit( void )
 {
 	UART0_BAUDDIV = 16;
-	UART0_CTRL = 11;	// questo abilita RX, TX e RX interrupt
+	UART0_CTRL = 11;	// this enables receving, transmitting and also enables RX interrupt
+	
+	NVIC_SetPriority(UARTRX0_IRQn,configMAX_SYSCALL_INTERRUPT_PRIORITY);	// needed because it is required by an assert in the "port.c" file in the "vPortValidateInterruptPriority" part. ISR interrupts must not have the same priority as FreeRTOS interrupts (so it is required that they are not 0 which is highest priority). so they must be numerically >= of configMAX_SYSCALL_INTERRUPT_PRIORITY (which is 5)
+	NVIC_EnableIRQ(UARTRX0_IRQn);	// with this we are enabling an ISR for UART. in the vector table of "startup_gcc.c" we have set to use "UART0RX_Handler" which is defined here in "main.c" below
+	
+	xQueueUART = xQueueCreate(NORMALBUFLEN, sizeof(char));	// we create queue which is used to pass uart data received from isr to various tasks
 }
 /*-----------------------------------------------------------*/
 
-int __write( int iFile, char *pcString, int iStringLength )
-{
-	int iNextChar;
+// int __write( int iFile, char *pcString, int iStringLength )
+// {
+// 	int iNextChar;
 
-	/* Avoid compiler warnings about unused parameters. */
-	( void ) iFile;
+// 	/* Avoid compiler warnings about unused parameters. */
+// 	( void ) iFile;
 
-	/* Output the formatted string to the UART. */
-	for( iNextChar = 0; iNextChar < iStringLength; iNextChar++ )
-	{
-		while( ( UART0_STATE & TX_BUFFER_MASK ) != 0 );
-		UART0_DATA = *pcString;
-		pcString++;
-	}
+// 	/* Output the formatted string to the UART. */
+// 	for( iNextChar = 0; iNextChar < iStringLength; iNextChar++ )
+// 	{
+// 		while( ( UART0_STATE & TX_BUFFER_MASK ) != 0 );
+// 		UART0_DATA = *pcString;
+// 		pcString++;
+// 	}
 
-	return iStringLength;
-}
+// 	return iStringLength;
+// }
 /*-----------------------------------------------------------*/
 
 void *malloc( size_t size )
@@ -257,48 +292,121 @@ void *malloc( size_t size )
 }
 
 
-int initializeLED(void){
-	LED_PORT = 0U;	// punto al contenuto dell'address LED_PORT e setto a 0 in modo da spegnere leds
 
-	return 0;
+
+
+
+void UART0RX_Handler(){
+	if (UART0_INTSTATUS == 2){	// if second bit is at 1 it means there was an rx interrupt
+		char c = UART0_DATA;	// we read character that was written by the user
+		xQueueSendToBackFromISR(xQueueUART, &c, NULL);
+		UART0_INTSTATUS = 2;	// we put second bit to 1 to clear the interrupt
+	}
 }
 
-int Switch_Led_On (int ledN){
-	if (ledN <= 7 && ledN >=0){		// controllo se ho ricevuto input corretto
-		LED_PORT |=  (1U << ledN);	// metto a livello alto il pin del led, facendolo accendere
-		return 0;
+
+
+
+
+void initializeLED(void){
+	LED_PORT = 0U;	// we point to the contents of the address LED_PORT and set to 0 so that leds are turned off
+
+}
+
+#if (DEBUG_WITH_STATS==1)	// we use timer only for stats, if we don't want stats then it's not used and so we don't need to initialize it.
+void initializeTimer0(unsigned int ticks){
+	CMSDK_TIMER0->INTCLEAR =  (1ul <<  0);                   /* clear interrupt */
+	CMSDK_TIMER0->RELOAD   =  (10000 - 1);                   /* set reload value */
+	CMSDK_TIMER0->CTRL     = ((1ul <<  3) |                  /* enable Timer interrupt */
+								(1ul <<  0) );               /* enable Timer */
+
+	NVIC_EnableIRQ(TIMER0_IRQn);                             /* Enable interrupt in NVIC */
+}
+#endif
+
+
+
+
+
+
+void Switch_Led_On (int ledN){
+	if (ledN <= 7 && ledN >=0){		// we check if we have received correct input
+		LED_PORT |=  (1U << ledN);	// we set the LED pin to high level, causing it to turn on
 	}
 
-	return -1;
 }
 
+void Switch_Led_Off (int ledN){
+	if (ledN <= 7 && ledN >=0){		// we check if we have received correct input
+		LED_PORT &= ~(1U << ledN);	// we set the led pin low, causing it to turn off
+	}
 
+}
 
+void vLEDTask(void *pvParameters) {
+	(void)pvParameters;	// ignore unused parameter warning
 
-
-
-
-void vTaskFunction(void *pvParameters) {
-    const char *taskName = pcTaskGetName(NULL);
-    (void)pvParameters; // Ignora l'avviso di parametro non utilizzato
-    printf("La task %s in esecuzione!\r\n", taskName);
-    vTaskDelay(pdMS_TO_TICKS(1000)); // Attendi 1000 millisecondi
-	
-	Switch_Led_On(1);
-
-	
+	// simple Knight Rider light effect
 	while(1){
+		vTaskSuspend(NULL);
+		printf("\n");
 
-		if (UART0_INTSTATUS == 2){	// se secondo bit è a 1 significa che c'è stato un rx interrupt
-			char c = UART0_DATA;	// leggo carattere che è stato scritto dall'utente
-			printf("%c",c);			// faccio echo del carattere
-			UART0_INTSTATUS = 2;	// metto secondo bit a 1 per pulire interrupt
+		for(int i=0;i<=7;++i){
+			Switch_Led_On(i);
+			printf("Led n: %d is on\n",i);
+			vTaskDelay(100);
+			Switch_Led_Off(i);
 		}
-	}
-	
+		for(int i=7;i>=0;--i){
+			Switch_Led_On(i);
+			printf("Led n: %d is on\n",i);
+			vTaskDelay(100);
+			Switch_Led_Off(i);
+		}
+		printf("\n");
 
-	vTaskDelete(NULL);
+	}
+
 }
 
+void executeCommand(char command[]){	// is executed in the vCommandlineTask task, whenever user gives send to a string in the uart
+	
+	#if (DEBUG_WITH_STATS==1)	// stats accessible only in debugging, as it is a resource-consuming and probably almost useless feature at the time of actual use of an embedded system.
+	if (strcmp(command,"stats")==0){
+		char buffer[DEBUGSTATSBUFLEN];	// we create a sufficiently large buffer
+		vTaskGetRunTimeStats(buffer);	// we take info and save it in the buffer. this function vTaskGetRunTimeStats needs many flags changed in various header files
+		printf("\nTask name\tRun time\tCPU usage\n%s\n",buffer);
+	}
+	#endif
+
+	if (strcmp(command,"led")==0){
+		vTaskResume(xHandleLED);
+	}
+}
+
+void vCommandlineTask(void *pvParameters) {
+    (void)pvParameters; // ignore unused parameter warning
+
+	char c;
+	char inputString[NORMALBUFLEN];  
+	while(1){
+		int index = 0;
+		while (index < NORMALBUFLEN-1) {
+			xQueueReceive(xQueueUART, &c, portMAX_DELAY);	// lock on the queue and wait for the character received from the ISR
+			printf("%c",c);			// we echo the character
+
+			if (c == '\r') {	// abort if '\r' is entered, i.e., if enter is given
+				break;
+			}
+
+			inputString[index] = c;		// add the character to the string
+			index++;
+   		}
+    	inputString[index] = '\0';			// add string terminator
+		
+		printf("Stringa ricevuta: %s\n", inputString);
+		executeCommand(inputString);
+	}
+}
 
 

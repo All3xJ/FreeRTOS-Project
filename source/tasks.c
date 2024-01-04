@@ -2525,7 +2525,7 @@ char * pcTaskGetName( TaskHandle_t xTaskToQuery ) /*lint !e971 Unqualified char 
                     uxTask += prvListTasksWithinSingleList( &( pxTaskStatusArray[ uxTask ] ), &xSuspendedTaskList, eSuspended );
                 }
                 #endif
-
+                
                 #if ( configGENERATE_RUN_TIME_STATS == 1 )
                 {
                     if( pulTotalRunTime != NULL )

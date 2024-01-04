@@ -41,8 +41,16 @@ void vTaskFunction(void *pvParameters);
  * See http://www.freertos.org/a00110.html
  *----------------------------------------------------------*/
 
-#define configUSE_TRACE_FACILITY 0
-#define configGENERATE_RUN_TIME_STATS 0
+#define DEBUG_WITH_STATS 1	// IF THIS IS 1 WE ARE ENABLING STATS TRACKING. IT'S RESOURCE CONSUMING AND QUIET USELESS IN REAL SCENARIO, SO IT'S SUGGESTED TO LEAVE THIS FLAG TO 1 ONLY DURING DEBUGGING PHASE.
+
+
+#if (DEBUG_WITH_STATS==1)	// if we want stats, these flags must be 1
+	#define configUSE_TRACE_FACILITY 1
+	#define configGENERATE_RUN_TIME_STATS 1
+#else
+	#define configUSE_TRACE_FACILITY 0
+	#define configGENERATE_RUN_TIME_STATS 0
+#endif
 
 #define configUSE_TICKLESS_IDLE         0
 #define configUSE_PREEMPTION			1
@@ -99,7 +107,11 @@ to exclude the API function. */
 format the raw data provided by the uxTaskGetSystemState() function in to human
 readable ASCII form.  See the notes in the implementation of vTaskList() within
 FreeRTOS/Source/tasks.c for limitations. */
-#define configUSE_STATS_FORMATTING_FUNCTIONS	0
+#if (DEBUG_WITH_STATS==1)	// if we want stats, this flag must be 1
+	#define configUSE_STATS_FORMATTING_FUNCTIONS	1
+#else
+	#define configUSE_STATS_FORMATTING_FUNCTIONS	0
+#endif
 
 #define configKERNEL_INTERRUPT_PRIORITY 		( 255 )	/* All eight bits as QEMU doesn't model the priority bits. */
 /* !!!! configMAX_SYSCALL_INTERRUPT_PRIORITY must not be set to zero !!!!
@@ -127,5 +139,20 @@ machine on which the test is developed). */
 #define intqHIGHER_PRIORITY		( configMAX_PRIORITIES - 5 )
 #define bktPRIMARY_PRIORITY		( configMAX_PRIORITIES - 3 )
 #define bktSECONDARY_PRIORITY	( configMAX_PRIORITIES - 4 )
+
+
+
+#if (DEBUG_WITH_STATS==1)	// if we want stats, we need to setup these stuff that will be used by FreeRTOS to calculate the run time and cpu usage for each task
+
+	// these functions are in the file IntQueueTimer.c
+	extern void RTOS_AppConfigureTimerForRuntimeStats(void);	// initializes the counter to 0
+	extern uint32_t RTOS_AppGetRuntimeCounterValueFromISR(void);	// gets the reached counter value
+	
+	// we "link" the functions to these port keywords required by FreeRTOS
+	#define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS()   RTOS_AppConfigureTimerForRuntimeStats()
+	#define portGET_RUN_TIME_COUNTER_VALUE()           RTOS_AppGetRuntimeCounterValueFromISR()
+
+#endif
+
 
 #endif /* FREERTOS_CONFIG_H */
