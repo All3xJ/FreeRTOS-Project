@@ -59,17 +59,17 @@ required UART registers. */
  * Printf() output is sent to the serial port.  Initialise the serial hardware.
  */
 static void prvUARTInit( void );
-
+void UART0RX_Handler(void);
 void initializeLED(void);
-
 #if (DEBUG_WITH_STATS==1)
-void initializeTimer0(unsigned int ticks);	// we use timer only for stats, if we don't want stats then it's not used and so we don't need to initialize it.
+static void initializeTimer0(unsigned int ticks);	// we use timer only for stats, if we don't want stats then it's not used and so we don't need to initialize it.
 #endif
 
+void Switch_Led_On (int ledN);
+void Switch_Led_Off (int ledN);
 static void vLEDTask( void *pvParameter );
 
 void executeCommand( char command[] );
-
 static void vCommandlineTask( void *pvParameter );
 
 xQueueHandle xQueueUART;
@@ -296,7 +296,7 @@ void *malloc( size_t size )
 
 
 
-void UART0RX_Handler(){
+void UART0RX_Handler(void){
 	if (UART0_INTSTATUS == 2){	// if second bit is at 1 it means there was an rx interrupt
 		char c = UART0_DATA;	// we read character that was written by the user
 		xQueueSendToBackFromISR(xQueueUART, &c, NULL);
@@ -314,11 +314,11 @@ void initializeLED(void){
 }
 
 #if (DEBUG_WITH_STATS==1)	// we use timer only for stats, if we don't want stats then it's not used and so we don't need to initialize it.
-void initializeTimer0(unsigned int ticks){
+static void initializeTimer0(unsigned int ticks){
 	CMSDK_TIMER0->INTCLEAR =  (1ul <<  0);                   /* clear interrupt */
-	CMSDK_TIMER0->RELOAD   =  (10000 - 1);                   /* set reload value */
+	CMSDK_TIMER0->RELOAD   =  configTICK_RATE_HZ/10 ;		 /* set reload value.... because counter is decremented and when 0 is reached, an interrupt is generated, and then this "reload" value is loaded... why configTICK_RATE_HZ/10? because it should be 10x faster than FreeRTOS tick (which is 1khz) */
 	CMSDK_TIMER0->CTRL     = ((1ul <<  3) |                  /* enable Timer interrupt */
-								(1ul <<  0) );               /* enable Timer */
+							 (1ul <<  0) );          	     /* enable Timer */
 
 	NVIC_EnableIRQ(TIMER0_IRQn);                             /* Enable interrupt in NVIC */
 }
@@ -343,7 +343,7 @@ void Switch_Led_Off (int ledN){
 
 }
 
-void vLEDTask(void *pvParameters) {
+static void vLEDTask(void *pvParameters) {
 	(void)pvParameters;	// ignore unused parameter warning
 
 	// simple Knight Rider light effect
@@ -384,7 +384,7 @@ void executeCommand(char command[]){	// is executed in the vCommandlineTask task
 	}
 }
 
-void vCommandlineTask(void *pvParameters) {
+static void vCommandlineTask(void *pvParameters) {
     (void)pvParameters; // ignore unused parameter warning
 
 	char c;
