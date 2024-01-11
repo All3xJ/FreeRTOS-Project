@@ -101,6 +101,7 @@ static void prvQueueSendTask(void *pvParameters);
 static void prvQueueSendTimerCallback(TimerHandle_t xTimerHandle);
 static void producerTask(void *pvParameters);
 static void consumerTask(void *pvParameters);
+void writeBuffer(void *arg);
 
 /*-----------------------------------------------------------*/
 
@@ -120,38 +121,27 @@ static void prvNewPrintString(const char *pcString);
 
 /*** SEE THE COMMENTS AT THE TOP OF THIS FILE ***/
 SemaphoreHandle_t xMutex;
-char buffer[20] = "";
+int *buffer;
 
 /* The tasks block for a pseudo random time between 0 and xMaxBlockTime ticks. */
 const TickType_t xMaxBlockTimeTicks = 0x20;
 
 void main_blinky(void)
 {
-	/* Before a semaphore is used it must be explicitly created.  In this example
-	a mutex type semaphore is created. */
 	xMutex = xSemaphoreCreateMutex();
+	buffer = (int *)pvPortMalloc(sizeof(int));
 
-	/* Check the semaphore was created successfully. */
-	if (xMutex != NULL)
+	if (xMutex != NULL && buffer != NULL)
 	{
-		/* Create two instances of the tasks that attempt to write stdout.  The
-		string they attempt to write is passed into the task as the task's
-		parameter.  The tasks are created at different priorities so some
-		pre-emption will occur. */
-		xTaskCreate(consumerTask, "Print1", 1000, "10", 1, NULL);
-		xTaskCreate(producerTask, "Print2", 1000, "niente", 2, NULL);
-
-		/* Start the scheduler so the created tasks start executing. */
+		xTaskCreate(producerTask, "producer", 1000, (void *)42, 3, NULL);
+		xTaskCreate(consumerTask, "consumer", 1000, NULL, 1, NULL);
 		vTaskStartScheduler();
 	}
 
-	/* The following line should never be reached because vTaskStartScheduler()
-	will only return if there was not enough FreeRTOS heap memory available to
-	create the Idle and (if configured) Timer tasks.  Heap management, and
-	techniques for trapping heap exhaustion, are described in the book text. */
 	for (;;)
-		;
-	return 0;
+	{
+		vApplicationIdleHook();
+	};
 }
 
 /*-----------------------------------------------------------*/
@@ -299,12 +289,8 @@ static void consumerTask(void *pvParameters)
 {
 	xSemaphoreTake(xMutex, portMAX_DELAY);
 	{
-
 		vTaskDelay(1000);
-		/* The following line will only execute once the semaphore has been
-		successfully obtained - so standard out can be accessed freely. */
-		printf("im the consumer, printing the buffer value:%s \n\r", buffer);
-
+		printf("im the consumer, printing the buffer value: %d", buffer);
 		vTaskDelay(1000);
 	}
 	xSemaphoreGive(xMutex);
@@ -312,16 +298,17 @@ static void consumerTask(void *pvParameters)
 
 static void producerTask(void *pvParameters)
 {
-	char *argStr;
-	argStr = (char *)pvParameters;
+	int argVal;
+	argVal = (int)pvParameters;
+
 	xSemaphoreTake(xMutex, portMAX_DELAY);
 	{
-		/* The following line will only execute once the semaphore has been
-		successfully obtained - so standard out can be accessed freely. */
-		printf("im the producer, writing \n\r%s\n\r on the buffer \n\r", argStr);
-		// pvPortStrcpy(buffer, argStr);
-
 		vTaskDelay(1000);
+		buffer = argVal;
+		printf("im the producer, writing \n\r%d\n\ron the buffer \n\r", argVal);
+		vTaskDelay(2000);
 	}
 	xSemaphoreGive(xMutex);
+
+	vTaskDelete(NULL);
 }
