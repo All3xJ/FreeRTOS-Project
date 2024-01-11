@@ -28,8 +28,8 @@ void main(void) {
 }
 
 # Tasks
-Producer Task
-The 'producerTask' function writes data to the shared buffer.
+#Producer Task
+#The 'producerTask' function writes data to the shared buffer.
 
 ```code
 static void producerTask(void *pvParameters) {
@@ -45,7 +45,7 @@ static void producerTask(void *pvParameters) {
 
 
 # Consumer Task
-The consumerTask function reads and prints the buffer value.
+#The consumerTask function reads and prints the buffer value.
 
 static void consumerTask(void *pvParameters) {
     // Consumer task code...
