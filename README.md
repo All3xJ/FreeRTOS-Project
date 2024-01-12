@@ -12,12 +12,21 @@ This is a simple example of a Producer-Consumer pattern implemented using FreeRT
 2. Set up FreeRTOS for your target environment.
 3. Compile and run the code on your target platform.
 
-## Run it with QEMU
+## Run with QEMU
 
-To run the example with QEMU, use the following command:
+### Simulation Setup
+
+To simulate the FreeRTOS Producer-Consumer example using QEMU, follow these steps:
+
+1. Ensure you have [QEMU](https://www.qemu.org/) installed on your system.
+
+2. Open a terminal and navigate to the directory containing your compiled FreeRTOS application binary (`RTOSDemo.out`).
+
+3. Run the following command:
 
 ```bash
-qemu-system-arm -machine mps2-an385 -cpu cortex-m3 -kernel /path/to/your/RTOSDemo.out
+qemu-system-arm -machine mps2-an385 -cpu cortex-m3 -kernel RTOSDemo.out
+
 
 ## Code Overview
 
