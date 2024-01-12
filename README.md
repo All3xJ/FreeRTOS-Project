@@ -24,7 +24,6 @@ To simulate the FreeRTOS Producer-Consumer example using QEMU, follow these step
 
 3. Run the following command:
 
-```bash
 qemu-system-arm -machine mps2-an385 -cpu cortex-m3 -kernel RTOSDemo.out
 
 
