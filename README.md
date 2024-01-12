@@ -23,9 +23,9 @@ To simulate the FreeRTOS Producer-Consumer example using QEMU, follow these step
 2. Open a terminal and navigate to the directory containing your compiled FreeRTOS application binary (`RTOSDemo.out`).
 
 3. Run the following command:
-
+```console
 qemu-system-arm -machine mps2-an385 -cpu cortex-m3 -kernel RTOSDemo.out
-
+```
 
 ## Code Overview
 
@@ -46,7 +46,6 @@ void main(void) {
 #Producer Task
 #The 'producerTask' function writes data to the shared buffer.
 
-```code
 static void producerTask(void *pvParameters) {
     // Producer task code...
 
@@ -71,6 +70,6 @@ static void consumerTask(void *pvParameters) {
 
     vTaskDelete(NULL);
 }
-
+```
 
 
