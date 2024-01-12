@@ -53,6 +53,8 @@ static void consumerTask(void *pvParameters) {
     printf("I'm the consumer, printing the buffer value: %d\n", buffer);
 
     // More consumer task code...
+
+    vTaskDelete(NULL);
 }
 
 
