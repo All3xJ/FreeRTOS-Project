@@ -12,6 +12,13 @@ This is a simple example of a Producer-Consumer pattern implemented using FreeRT
 2. Set up FreeRTOS for your target environment.
 3. Compile and run the code on your target platform.
 
+## Run it with QEMU
+
+To run the example with QEMU, use the following command:
+
+```bash
+qemu-system-arm -machine mps2-an385 -cpu cortex-m3 -kernel /path/to/your/RTOSDemo.out
+
 ## Code Overview
 
 The `main` function initializes the FreeRTOS environment, creates tasks, and starts the scheduler. The `producerTask` writes data to the shared buffer, and the `consumerTask` reads and prints the buffer value.
