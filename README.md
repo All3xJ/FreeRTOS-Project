@@ -48,19 +48,18 @@ the UART RX interrupt and creates a FreeRTOS queue for UART data.
     executed). The priority is configured to the highest logical value,
     respecting the reserved value designated for OS interrupts.
 
-``` {.objectivec language="C"}
-void prvUARTInit( void ) {
-	// Set baud rate and configure UART control registers
-	UART0_BAUDDIV = 16;
-	UART0_CTRL = 11;
+    void prvUARTInit( void ) {
+        // Set baud rate and configure UART control registers
+        UART0_BAUDDIV = 16;
+        UART0_CTRL = 11;
 
-	// Configure NVIC settings for UART RX interrupt
-	NVIC_SetPriority(UARTRX0_IRQn, configMAX_SYSCALL_INTERRUPT_PRIORITY);
-	NVIC_EnableIRQ(UARTRX0_IRQn);
+        // Configure NVIC settings for UART RX interrupt
+        NVIC_SetPriority(UARTRX0_IRQn, configMAX_SYSCALL_INTERRUPT_PRIORITY);
+        NVIC_EnableIRQ(UARTRX0_IRQn);
 
-	// Create FreeRTOS queue for UART data
-	xQueueUART = xQueueCreate(NORMALBUFLEN, sizeof(char));
-}
+        // Create FreeRTOS queue for UART data
+        xQueueUART = xQueueCreate(NORMALBUFLEN, sizeof(char));
+    }
 
 ### Vector Table Update
 
