@@ -50,18 +50,18 @@ the UART RX interrupt and creates a FreeRTOS queue for UART data.
     executed). The priority is configured to the highest logical value,
     respecting the reserved value designated for OS interrupts.
 
-    void prvUARTInit( void ) {
-        // Set baud rate and configure UART control registers
-        UART0_BAUDDIV = 16;
-        UART0_CTRL = 11;
+        void prvUARTInit( void ) {
+            // Set baud rate and configure UART control registers
+            UART0_BAUDDIV = 16;
+            UART0_CTRL = 11;
 
-        // Configure NVIC settings for UART RX interrupt
-        NVIC_SetPriority(UARTRX0_IRQn, configMAX_SYSCALL_INTERRUPT_PRIORITY);
-        NVIC_EnableIRQ(UARTRX0_IRQn);
+            // Configure NVIC settings for UART RX interrupt
+            NVIC_SetPriority(UARTRX0_IRQn, configMAX_SYSCALL_INTERRUPT_PRIORITY);
+            NVIC_EnableIRQ(UARTRX0_IRQn);
 
-        // Create FreeRTOS queue for UART data
-        xQueueUART = xQueueCreate(NORMALBUFLEN, sizeof(char));
-    }
+            // Create FreeRTOS queue for UART data
+            xQueueUART = xQueueCreate(NORMALBUFLEN, sizeof(char));
+        }
 
 ### Vector Table Update
 
@@ -142,10 +142,10 @@ The Timer 0 initialization function (`initializeTimer0`) is executed
 when runtime statistics are enabled. The `RELOAD` value is crucial for
 determining the interrupt frequency of Timer 0. In our configuration,
 since `RELOAD` value is being decremented each clock cycle, if we put a
-value equal to $\text{{configCPU\_CLOCK\_HZ}} / 10 \, \text{{kHz}}$, we
-achieve a 10 kHz timer interrupt frequency. This is because, for
+value equal to configCPU_CLOCK_HZ/10kHz we
+achieve a 10 kHz timer interrupt frequency. We do this because, for
 statistics tracking, it's suggested to have a 10 times faster frequency
-than FreeRTOS SysTick (1khz).
+than FreeRTOS SysTick (1kHz).
 
 ``` {.objectivec language="C"}
 void main( void )
@@ -203,14 +203,9 @@ array within the `startup_gcc.c` file.
 #endif
 ```
 
-# LED Animations in FreeRTOS
+# LED Animations
 
-Knight Rider effect and Constant Blink effect are implemented in the
-`vLEDTask` function, which is a FreeRTOS task responsible for controlling the LEDs.
-The task is suspended and resumed using its TaskHandler and the \"led\" command
-entered by the user through the UART console, inside `executeCommand` function.
-We created a simple `printLED` function which observes the state of LEDs and
-draws the LED grid to show which LED is on and off.
+The "Knight Rider" effect and the "Constant Blink" effect are both implemented within the `vLEDTask`. This task is suspended at the end of each cycle and is resumed inside the `executeCommand` function, using the vLEDTask's TaskHandler, when the user enters the "led" command through the UART console. We've developed a straightforward function named `printLED` that monitors the state of LEDs and draws a LED grid to illustrate which LEDs are on and off.
 
 ![ledanimations.png](./examplesImages/ledanimations.png)
 
