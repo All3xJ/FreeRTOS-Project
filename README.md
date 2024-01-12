@@ -48,21 +48,19 @@ the UART RX interrupt and creates a FreeRTOS queue for UART data.
     executed). The priority is configured to the highest logical value,
     respecting the reserved value designated for OS interrupts.
 
-```{=html}
-<!-- -->
-```
-    void prvUARTInit( void ) {
-        // Set baud rate and configure UART control registers
-        UART0_BAUDDIV = 16;
-        UART0_CTRL = 11;
+``` {.objectivec language="C"}
+void prvUARTInit( void ) {
+	// Set baud rate and configure UART control registers
+	UART0_BAUDDIV = 16;
+	UART0_CTRL = 11;
 
-        // Configure NVIC settings for UART RX interrupt
-        NVIC_SetPriority(UARTRX0_IRQn, configMAX_SYSCALL_INTERRUPT_PRIORITY);
-        NVIC_EnableIRQ(UARTRX0_IRQn);
+	// Configure NVIC settings for UART RX interrupt
+	NVIC_SetPriority(UARTRX0_IRQn, configMAX_SYSCALL_INTERRUPT_PRIORITY);
+	NVIC_EnableIRQ(UARTRX0_IRQn);
 
-        // Create FreeRTOS queue for UART data
-        xQueueUART = xQueueCreate(NORMALBUFLEN, sizeof(char));
-    }
+	// Create FreeRTOS queue for UART data
+	xQueueUART = xQueueCreate(NORMALBUFLEN, sizeof(char));
+}
 
 ### Vector Table Update
 
@@ -83,6 +81,8 @@ enabling the toggling of statistical features as needed during real-time
 usage by setting the flag to 0. We will use the hardware TIMER0 to
 increment a counter with a frequency of 10kHz. This counter will be used
 to track the CPU usage of each task.
+
+![cpustats.png](./examplesImages/cpustats.png)
 
 ### Statistics Command Execution
 
