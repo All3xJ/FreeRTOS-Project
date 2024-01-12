@@ -8,6 +8,8 @@ user is not actively using the keyboard, the CPU can be utilized for
 other tasks or transition to an IDLE state to conserve resources and
 energy.
 
+![uartcommandline.png](./examplesImages/uartcommandline.png)
+
 ### Interrupt Handling
 
 Upon asynchronous input of a character from the keyboard, the
@@ -201,37 +203,26 @@ array within the `startup_gcc.c` file.
 #endif
 ```
 
-# Knight Rider LED Effect in FreeRTOS
+# LED Animations in FreeRTOS
 
-The Knight Rider effect is implemented in the `vLEDTask` function, which
-is a FreeRTOS task responsible for controlling the LEDs. The task is
-suspended and resumed using a message queue and the \"led\" command
-entered by the user through the UART console.
+Knight Rider effect and Constant Blink effect are implemented in the
+`vLEDTask` function, which is a FreeRTOS task responsible for controlling the LEDs.
+The task is suspended and resumed using its TaskHandler and the \"led\" command
+entered by the user through the UART console, inside `executeCommand` function.
+We created a simple `printLED` function which observes the state of LEDs and
+draws the LED grid to show which LED is on and off.
+
+![ledanimations.png](./examplesImages/ledanimations.png)
 
     static void vLEDTask(void *pvParameters) {
         (void)pvParameters; // Ignore the unused parameter
 
-        // Knight Rider Effect
+        // LED Effects
         while(1){
             vTaskSuspend(NULL);
-            printf("\n");
 
-            for(int i=0; i<=7; ++i){
-                Switch_Led_On(i);
-                printf("Led n: %d is on\n", i);
-                vTaskDelay(100);
-                Switch_Led_Off(i);
-            }
-
-            // Here we go to the other direction so we decrement
-            for(int i=7; i>=0; --i){
-                Switch_Led_On(i);
-                printf("Led n: %d is on\n", i);
-                vTaskDelay(100);
-                Switch_Led_Off(i);
-            }
-
-            printf("\n");
+            LEDKnightRider();   // Knight Rider light effect
+            LEDConstantBlink(); // Constant Blink light effect
         }
     }
 
@@ -243,18 +234,24 @@ register. Here's how it's defined:
     #define LED_PORT    (MPS2_SCC->LEDS)
 
 This corresponds to the CFGREG1 register within the Serial Communication
-Controller (SCC) interface on the board. In CFGREG1, bits \[7:0\] are
+Controller (SCC) interface on the board. In CFG_REG1, bits \[7:0\] are
 dedicated to controlling the board LEDs, where setting a bit to 1 powers
 the corresponding LED on, and setting it to 0 powers it off.
 
-The code uses bitwise operations to control specific LED pins based on
-the desired LED number through the `Switch_Led_On` and `Switch_Led_Off`
-functions:
+The code above uses bitwise operations to control specific LED pins based on
+the desired LED number through the `Switch_Led_On` and `Switch_Led_Off` used by LEDKnightRider
+and `Switch_All_Led_On` and `Switch_All_Led_Off` used by LEDConstantBlink:
 
     void Switch_Led_On(int ledN){
         if (ledN <= 7 && ledN >= 0){
             LED_PORT |= (1U << ledN);    // Turn on the LED specified by ledN
         }
-        // Note: Switch_Led_Off is analogous but with bitwise AND
+        // Note: Switch_Led_Off is analogous but with bitwise AND with complement:
         // LED_PORT &= ~(1U << ledN);   // Turn off the LED specified by ledN
+    }
+
+    void Switch_All_Led_On(){
+        LED_PORT |=  (1U << ledN);  // Bitwise OR operation to turn on all LEDs
+        // Note: Switch_All_Led_Off is analogous but with bitwise AND with complement:
+        // LED_PORT &= ~0xFF;   // Turn off all LEDs in the last 7 bits of the LED_PORT register
     }

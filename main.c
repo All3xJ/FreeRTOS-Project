@@ -67,6 +67,11 @@ static void initializeTimer0(unsigned int ticks);	// we use timer only for stats
 
 void Switch_Led_On (int ledN);
 void Switch_Led_Off (int ledN);
+void Switch_All_Led_On();
+void Switch_All_Led_Off();
+void LEDKnightRider();
+void LEDConstantBlink();
+void printLEDs ();
 static void vLEDTask( void *pvParameter );
 
 void executeCommand( char command[] );
@@ -342,26 +347,62 @@ void Switch_Led_Off (int ledN){
 
 }
 
+void Switch_All_Led_On(){
+	// Turns on all LEDs in the last 7 bits of the LED_PORT register
+	LED_PORT |= 0xFF;
+}
+
+void Switch_All_Led_Off(){
+	// Turns off all LEDs in the last 7 bits of the LED_PORT register
+	LED_PORT &= ~0xFF;
+}
+
+void printLEDs(){	// silly function to draw leds checking if they are powered on.
+	printf("╔═══════════════╗\n");
+	for (int ledN = 0; ledN <= 7; ++ledN) {	// there is a total of 8 LEDs
+		printf("║%s", (LED_PORT & (1 << ledN)) ? "X" : " ");
+	}
+	printf("║\n");
+	printf("╚═══════════════╝\n");
+}
+
+void LEDKnightRider(){
+	for(int i=0;i<=7;++i){
+		Switch_Led_On(i);
+		printLEDs();
+		vTaskDelay(100);
+		Switch_Led_Off(i);
+	}
+	for(int i=7;i>=0;--i){
+		Switch_Led_On(i);
+		printLEDs();
+		vTaskDelay(100);
+		Switch_Led_Off(i);
+	}
+}
+
+void LEDConstantBlink(){
+	for(int i=0;i<5;++i){	// we repeat it 5 times
+		Switch_All_Led_On();
+		printLEDs();
+		vTaskDelay(200);
+		Switch_All_Led_Off();
+		printLEDs();
+		vTaskDelay(200);
+	}
+
+}
+
 static void vLEDTask(void *pvParameters) {
 	(void)pvParameters;	// ignore unused parameter warning
 
-	// simple Knight Rider light effect
 	while(1){
-		vTaskSuspend(NULL);
+		vTaskSuspend(NULL);	// task everytime is going to sleep. will be resumed if user enters "led" in commandline
 		printf("\n");
 
-		for(int i=0;i<=7;++i){
-			Switch_Led_On(i);
-			printf("Led n: %d is on\n",i);
-			vTaskDelay(100);
-			Switch_Led_Off(i);
-		}
-		for(int i=7;i>=0;--i){
-			Switch_Led_On(i);
-			printf("Led n: %d is on\n",i);
-			vTaskDelay(100);
-			Switch_Led_Off(i);
-		}
+		LEDKnightRider();	// simple Knight Rider light effect
+		LEDConstantBlink();	// simple Constant Blink light effect
+
 		printf("\n");
 	}
 }
