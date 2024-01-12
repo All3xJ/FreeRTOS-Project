@@ -4,7 +4,7 @@ SUB_MAKEFILE_DIR = ./library-makefiles
 
 # Change this lines with your compiler
 CC = arm-none-eabi-gcc
-LD = arm-none-eabi-gcc	# devo mettere gcc e non ld altrimenti alcune opzioni come cpu=cortex-m3 non le trova
+LD = arm-none-eabi-gcc	# I have to put gcc and not ld otherwise some options like cpu=cortex-m3 doesn't find them
 SIZE = arm-none-eabi-size
 MAKE = make
 
@@ -15,7 +15,6 @@ CFLAGS += $(INCLUDE_DIRS) -nostartfiles -ffreestanding -mthumb -mcpu=cortex-m3 \
 # Change this lines with to import the correct libraries (if needed)
 INCLUDE_DIRS += -I headers \
                 -I source \
-				-I /usr/arm-none-eabi/include/c++/13.1.0/ \
 
 # Source files
 SOURCE_DIR := source

@@ -415,15 +415,15 @@ void xPortPendSVHandler( void )
         "	stmdb sp!, {r3, r14}				\n"
         "	mov r0, %0							\n"
         "	msr basepri, r0						\n"
-        "	bl vTaskSwitchContext				\n"
+        "	bl vTaskSwitchContext				\n"// important to choose the next task to run. and also to increment the counter used to get the cpu usage stats.
         "	mov r0, #0							\n"
         "	msr basepri, r0						\n"
         "	ldmia sp!, {r3, r14}				\n"
         "										\n"/* Restore the context, including the critical nesting count. */
-        "	ldr r1, [r3]						\n"
-        "	ldr r0, [r1]						\n"/* The first item in pxCurrentTCB is the task top of stack. */
-        "	ldmia r0!, {r4-r11}					\n"/* Pop the registers. */
-        "	msr psp, r0							\n"
+        "	ldr r1, [r3]					    \n"/* Use pxCurrentTCBConst to get the pxCurrentTCB address. */
+        "	ldr r0, [r1]					    \n"/* The first item in pxCurrentTCB is the task top of stack. */
+        "	ldmia r0!, {r4-r11}				    \n"/* Pop the registers that are not automatically saved on exception entry and the critical nesting count. */
+        "	msr psp, r0						    \n"/* Restore the task stack pointer. */
         "	isb									\n"
         "	bx r14								\n"
         "										\n"

@@ -87,9 +87,8 @@ void main( void )
 	prvUARTInit();
 	initializeLED();
 	#if (DEBUG_WITH_STATS==1)
-	initializeTimer0(configTICK_RATE_HZ*10);	// we use timer only for stats, if we don't want stats then it's not used and so we don't need to initialize it.
+	initializeTimer0(2500);	// we use timer only for stats, if we don't want stats then it's not used and so we don't need to initialize it. 2550 is the result of configCPU_CLOCK_HZ/10khz = 25mhz/10khz to obtain a timer interrupt of 10khz because it should be 10x faster than FreeRTOS tick (which is 1khz)
 	#endif
-
 
 	#if (DEBUG_WITH_STATS==1)	// if we want stats, then we need a larger stack to hold the buffer (DEBUGSTATSBUFLEN) + 100 for any other variables used
 	xTaskCreate(vCommandlineTask, "Commandline Task", configMINIMAL_STACK_SIZE+DEBUGSTATSBUFLEN+100, NULL, tskIDLE_PRIORITY + 1, NULL);
@@ -249,7 +248,7 @@ static StackType_t uxTimerTaskStack[ configTIMER_TASK_STACK_DEPTH ];
 
 static void prvUARTInit( void )
 {
-	UART0_BAUDDIV = 16;
+	UART0_BAUDDIV = 16;	// we set the divider at minimum possibile=16. so we have max baud rate (less cpu cycle to get character, so faster)
 	UART0_CTRL = 11;	// this enables receving, transmitting and also enables RX interrupt
 	
 	NVIC_SetPriority(UARTRX0_IRQn,configMAX_SYSCALL_INTERRUPT_PRIORITY);	// needed because it is required by an assert in the "port.c" file in the "vPortValidateInterruptPriority" part. ISR interrupts must not have the same priority as FreeRTOS interrupts (so it is required that they are not 0 which is highest priority). so they must be numerically >= of configMAX_SYSCALL_INTERRUPT_PRIORITY (which is 5)
@@ -316,7 +315,7 @@ void initializeLED(void){
 #if (DEBUG_WITH_STATS==1)	// we use timer only for stats, if we don't want stats then it's not used and so we don't need to initialize it.
 static void initializeTimer0(unsigned int ticks){
 	CMSDK_TIMER0->INTCLEAR =  (1ul <<  0);                   /* clear interrupt */
-	CMSDK_TIMER0->RELOAD   =  configTICK_RATE_HZ/10 ;		 /* set reload value.... because counter is decremented and when 0 is reached, an interrupt is generated, and then this "reload" value is loaded... why configTICK_RATE_HZ/10? because it should be 10x faster than FreeRTOS tick (which is 1khz) */
+	CMSDK_TIMER0->RELOAD   =  ticks ;		 				 /* set reload value.... because counter is decremented and when 0 is reached, an interrupt is generated, and then this "reload" value is loaded... ticks = configCPU_CLOCK_HZ/10khz = 25mhz/10khz to obtain a timer interrupt of 10khz because it should be 10x faster than FreeRTOS tick (which is 1khz) */
 	CMSDK_TIMER0->CTRL     = ((1ul <<  3) |                  /* enable Timer interrupt */
 							 (1ul <<  0) );          	     /* enable Timer */
 
@@ -364,9 +363,7 @@ static void vLEDTask(void *pvParameters) {
 			Switch_Led_Off(i);
 		}
 		printf("\n");
-
 	}
-
 }
 
 void executeCommand(char command[]){	// is executed in the vCommandlineTask task, whenever user gives send to a string in the uart
@@ -404,7 +401,7 @@ static void vCommandlineTask(void *pvParameters) {
    		}
     	inputString[index] = '\0';			// add string terminator
 		
-		printf("Stringa ricevuta: %s\n", inputString);
+		printf("Received string: %s\n", inputString);
 		executeCommand(inputString);
 	}
 }
