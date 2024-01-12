@@ -8,7 +8,7 @@ user is not actively using the keyboard, the CPU can be utilized for
 other tasks or transition to an IDLE state to conserve resources and
 energy.
 
-## Interrupt Handling
+### Interrupt Handling
 
 Upon asynchronous input of a character from the keyboard, the
 `UART0RX_Handler` routine is activated to handle the reception. This
@@ -26,7 +26,7 @@ it to a FreeRTOS queue. `vCommandlineTask` will process them.
         }
     }
 
-## UART Initialization
+### UART Initialization
 
 The UART initialization function (`prvUARTInit`) handles the
 configuration of the UART module, baud rate setup, and initialization of
@@ -64,7 +64,7 @@ the UART RX interrupt and creates a FreeRTOS queue for UART data.
         xQueueUART = xQueueCreate(NORMALBUFLEN, sizeof(char));
     }
 
-## Vector Table Update
+### Vector Table Update
 
 For the effective handling of UART RX interrupts on our board, we need
 to include the address of our `UART0RX_Handler` function in the relevant
@@ -84,7 +84,7 @@ usage by setting the flag to 0. We will use the hardware TIMER0 to
 increment a counter with a frequency of 10kHz. This counter will be used
 to track the CPU usage of each task.
 
-## Statistics Command Execution
+### Statistics Command Execution
 
 `vCommandlineTask` function reads a string from UART and passes it to
 the `executeCommand` function for processing. If the command is
@@ -135,7 +135,7 @@ void executeCommand(char command[]) {
 }
 ```
 
-## Timer 0 Initialization
+### Timer 0 Initialization
 
 The Timer 0 initialization function (`initializeTimer0`) is executed
 when runtime statistics are enabled. The `RELOAD` value is crucial for
@@ -175,7 +175,7 @@ static void initializeTimer0(unsigned int ticks){
 #endif
 ```
 
-## Timer 0 Handler
+### Timer 0 Handler
 
 We modified the Timer 0 interrupt handler as follows:
 
@@ -189,7 +189,7 @@ void TIMER0_Handler( void )
 }
 ```
 
-## Vector Table Update
+### Vector Table Update
 
 To instruct our board to execute `TIMER0_Handler` each time the TIMER0
 peripheral generates an interrupt (every 10 kHz), it is crucial to
@@ -236,7 +236,7 @@ entered by the user through the UART console.
         }
     }
 
-## LED Control details
+### LED Control details
 
 To manage the state of LEDs on this board, we use the `LED_PORT`
 register. Here's how it's defined:
