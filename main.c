@@ -249,6 +249,7 @@ static void prvNewPrintString(const char *pcString)
 		vTaskDelay(1000);
 	}
 	xSemaphoreGive(xMutex);
+	vTaskDelete(NULL);
 
 	/* Allow any key to stop the application running.  A real application that
 	actually used the key value should protect access to the keyboard too.  A
