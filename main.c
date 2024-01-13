@@ -43,64 +43,103 @@ required UART registers. */
 
 void vFullDemoTickHookFunction( void );
 
-/*
- * Printf() output is sent to the serial port.  Initialise the serial hardware.
- */
+
 static void prvUARTInit( void );
-
+void vTask1( void *pvParameters );
+void vTask2( void *pvParameters );
+volatile BaseType_t xTaskTerminated = pdFALSE;
+TaskHandle_t xTask2Handle = NULL;
+HeapStats_t HeapStats;
 /*-----------------------------------------------------------*/
+#define MIN_FREE_MEMORY_THRESHOLD 59500
+volatile uint32_t ulNumActiveTasks = 2;
+void *allocatedMemoryTask1 = NULL;
+void *allocatedMemoryTask2 = NULL;
 
 
-void printHeapStats(HeapStats_t *pstats)
-{
-    printf(" xAvailableHeapSpaceInBytes - %u", pstats->xAvailableHeapSpaceInBytes, "\n" );
-    printf(" xSizeOfLargestFreeBlockInBytes - %u", pstats->xSizeOfLargestFreeBlockInBytes, "\n");
-    printf(" xSizeOfSmallestFreeBlockInBytes - %u", pstats->xSizeOfSmallestFreeBlockInBytes, "\n");
-    printf(" xNumberOfFreeBlocks - %u", pstats->xNumberOfFreeBlocks, "\n");
-    printf(" xMinimumEverFreeBytesRemaining - %u", pstats->xMinimumEverFreeBytesRemaining, "\n");
-    printf(" xNumberOfSuccessfulAllocations - %u", pstats->xNumberOfSuccessfulAllocations, "\n");
-    printf(" xNumberOfSuccessfulFrees - %u", pstats->xNumberOfSuccessfulFrees, "\n\n");
+
+/* Function to handle memory watchdog and cleanup when free memory is below threshold */
+void memoryWatchdog(TaskHandle_t taskHandle, const char *taskName) {
+    
+	
+		xTaskTerminated = pdTRUE;
+        vPrintString(taskName);
+        vPrintString(": Free memory below threshold. Stopping task.\r\n");
+
+        vTaskDelete(taskHandle); // Terminate the task
+
+    // Decrement the count of active tasks
+        taskENTER_CRITICAL();
+        {
+            ulNumActiveTasks--;
+        }
+        taskEXIT_CRITICAL();
+
+		if (ulNumActiveTasks == 0) {
+        // All tasks have terminated, deallocate memory here
+        vPortFree(allocatedMemoryTask1);
+		vPortFree(allocatedMemoryTask2);
+		
+    }
+   
+    
+}
+
+//Function to print heap statistics //
+void printHeapStats(HeapStats_t *pstats, const char *taskName) {
+  printf("Free heap statistics for task '%s':\n", taskName);
+  printf(" UsedHeapSpaceInBytes: %u\n", configTOTAL_HEAP_SIZE - pstats->xAvailableHeapSpaceInBytes);
+  printf(" AvailableHeapSpaceInBytes: %u\n", pstats->xAvailableHeapSpaceInBytes);
+  printf(" SizeOfLargestFreeBlockInBytes: %u\n", pstats->xSizeOfLargestFreeBlockInBytes);
+  printf(" SizeOfSmallestFreeBlockInBytes: %u\n", pstats->xSizeOfSmallestFreeBlockInBytes);
+  printf(" NumberOfFreeBlocks: %u\n", pstats->xNumberOfFreeBlocks);
+  printf(" MinimumEverFreeBytesRemaining: %u\n", pstats->xMinimumEverFreeBytesRemaining);
+  printf(" NumberOfSuccessfulAllocations: %u\n", pstats->xNumberOfSuccessfulAllocations);
+  printf(" NumberOfSuccessfulFrees: %u\n\n", pstats->xNumberOfSuccessfulFrees);
 }
 
 /*-----------------------------------------------------------*/
 
-void main( void )
+
+void vPrintString(const char *pcString) {
+    
+    // to output the string to the UART
+    printf("%s", pcString);
+}
+
+
+
+int main( void )
 {
-	/* See https://www.freertos.org/freertos-on-qemu-mps2-an385-model.html for
-	instructions. */
-
-	/* Hardware initialisation.  printf() output uses the UART for IO. */
 	prvUARTInit();
-
-	printf("Prova\r\n");
-
-	xTaskCreate(vTaskFunction, "Task1", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-    xTaskCreate(vTaskFunction, "Task2", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-  	xTaskCreate(vTaskFunction, "Task3", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
+	/* Create the first task at priority 6. The task parameter is not used 
+	and set to NULL. The task handle is also not used so is also set to NULL. */
 	
-	HeapStats_t heapStats;
-	vPortGetHeapStats(&heapStats);
-	printHeapStats(&heapStats);
+	xTaskCreate( vTask1, "Task 1",configMINIMAL_STACK_SIZE*2, NULL, 6, NULL);
+	
+	/* The task is created at priority 6 ______^. */
+
+	/* Create the second task at priority 5 - which is lower than the priority
+	given to Task 1. Again the task parameter is not used so is set to NULL -
+	BUT this time the task handle is required so the address of xTask2Handle
+	is passed in the last parameter. */
+	xTaskCreate( vTask2, "Task 2", configMINIMAL_STACK_SIZE*2, NULL, 5, &xTask2Handle );
+	/* The task handle is the last parameter _____^^^^^^^^^^^^^ */
+
+	/* Start the scheduler so the tasks start executing. */
+	vTaskStartScheduler();
+
+      
+
+	/* If all is well then main() will never reach here as the scheduler will 
+	now be running the tasks. If main() does reach here then it is likely there
+	was insufficient heap memory available for the idle task to be created. 
+	*/
+	for( ;; );
 
 
 
-	vPortGetHeapStats(&heapStats);
-	printHeapStats(&heapStats);
-
-		// Simulazione di un'allocazione di memoria 10B
-	void *allocatedMemory = pvPortMalloc(10);
-
-	if (allocatedMemory != NULL)
-	{
-			printf(" Memory allocated successfully.\n");
-			vPortFree(allocatedMemory);
-	}
-
-   
-
-    vPortGetHeapStats(&heapStats);
-    printHeapStats(&heapStats);
-  	vTaskStartScheduler();
+	
 
 }
 /*-----------------------------------------------------------*/
@@ -137,6 +176,8 @@ void vApplicationIdleHook( void )
 	that vApplicationIdleHook() is permitted to return to its calling function,
 	because it is the responsibility of the idle task to clean up memory
 	allocated by the kernel to any task that has since deleted itself. */
+	
+   
 }
 /*-----------------------------------------------------------*/
 
@@ -286,10 +327,95 @@ void *malloc( size_t size )
 
 }
 
-void vTaskFunction(void *pvParameters) {
-    const char *taskName = pcTaskGetName(NULL);
-    (void)pvParameters; // Ignora l'avviso di parametro non utilizzato
-    printf(" La task %s in esecuzione!\r\n", taskName);
-    vTaskDelay(pdMS_TO_TICKS(1000)); // Attendi 1000 millisecondi
-	vTaskDelete(NULL);
+void vTask1( void *pvParameters )
+{
+	UBaseType_t uxPriority;
+	/* This task will always run before Task 2 as it is created with the higher 
+	priority. Neither Task 1 nor Task 2 ever block so both will always be in 
+	either the Running or the Ready state.
+	Query the priority at which this task is running - passing in NULL means
+	"return the calling task’s priority". */
+
+	uxPriority = uxTaskPriorityGet( NULL );
+	for( ;; )
+	{
+		
+	/* Print out the name of this task. */
+	vPrintString( "Task 1 is running\r\n" );
+	
+	vPortGetHeapStats(&HeapStats);
+	printHeapStats(&HeapStats, "Task1");
+
+	if (HeapStats.xAvailableHeapSpaceInBytes < MIN_FREE_MEMORY_THRESHOLD)
+			memoryWatchdog(NULL, "Task1");
+
+	void *allocatedMemoryTask1 = pvPortMalloc(10);
+
+	/* Setting the Task 2 priority above the Task 1 priority will cause
+	Task 2 to immediately start running (as then Task 2 will have the higher 
+	priority of the two created tasks). Note the use of the handle to task
+	2 (xTask2Handle) in the call to vTaskPrioritySet(). Listing 35 shows how
+	the handle was obtained. */
+
+	// Raise Task 2 priority if it's still running
+
+
+	if (!xTaskTerminated) {
+				/* Code to be executed only if Task 2 is still running */
+			
+				vPrintString( "About to raise the Task 2 priority\r\n" );
+				vTaskDelay(pdMS_TO_TICKS(1000));
+				vTaskPrioritySet( xTask2Handle, ( uxPriority + 1 ) );
+			}
+
+
+
+	/* Task 1 will only run when it has a priority higher than Task 2.
+	Therefore, for this task to reach this point, Task 2 must already have
+	executed and set its priority back down to below the priority of this
+	task. */
+	}
 }
+
+void vTask2( void *pvParameters )
+{
+	UBaseType_t uxPriority;
+	/* Task 1 will always run before this task as Task 1 is created with the
+	higher priority. Neither Task 1 nor Task 2 ever block so will always be 
+	in either the Running or the Ready state.
+	Query the priority at which this task is running - passing in NULL means
+	"return the calling task’s priority". */
+	uxPriority = uxTaskPriorityGet( NULL );
+	
+	for( ;; )
+	{
+	/* For this task to reach this point Task 1 must have already run and
+	set the priority of this task higher than its own.
+	Print out the name of this task. */
+	
+	vPrintString( "Task 2 is running\r\n" );
+	
+	vPortGetHeapStats(&HeapStats);
+	printHeapStats(&HeapStats, "Task2");
+
+	if (HeapStats.xAvailableHeapSpaceInBytes < MIN_FREE_MEMORY_THRESHOLD){
+		memoryWatchdog(xTask2Handle, "Task2");
+	}
+
+	void *allocatedMemoryTask2 = pvPortMalloc(20);
+	
+	/* Set the priority of this task back down to its original value. 
+	Passing in NULL as the task handle means "change the priority of the 
+	calling task". Setting the priority below that of Task 1 will cause 
+	Task 1 to immediately start running again – pre-empting this task. */
+
+	// Lower Task 2 priority
+	if(!xTaskTerminated){
+		vPrintString( "About to lower the Task 2 priority\r\n" );
+		vTaskDelay(pdMS_TO_TICKS(1000));
+		
+		vTaskPrioritySet( NULL, ( uxPriority - 2 ) );
+		}
+	}
+}
+
