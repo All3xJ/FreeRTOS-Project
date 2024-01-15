@@ -176,7 +176,18 @@ void printHeapStats(HeapStats_t *pstats, const char *taskName) {
 }
 
 
-
+ 
 
 
 ```
+
+##General Issues for further implementation
+- Se provi a fare i whatch dod periodico, , killa il task che è al dis sotto della soglia, ma anche quando il secondo supera la soglia, questo non viene killato
+- Stesso problema si verifica quando vengono analizzate le priorità, o vengono killati i task in base alla priorità 
+
+
+
+
+
+
+
