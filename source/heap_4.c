@@ -225,7 +225,7 @@ void * pvPortMalloc( size_t xWantedSize )
                         pxBlock->xBlockSize = xWantedSize;
 
                         /* Insert the new block into the list of free blocks. */
-                        prvInsertBlockIntoFreeList( pxNewBlockLink );
+                        prvInsertBlockIntoFreeList( pxNewBlockLink );   // I put the splitted free portion of block into the linked list updating it
                     }
                     else
                     {
@@ -294,7 +294,7 @@ void vPortFree( void * pv )
     if( pv != NULL )
     {
         /* The memory being freed will have an BlockLink_t structure immediately
-         * before it. */
+         * before it. */    // it is the linked list structure, so this way we point to it
         puc -= xHeapStructSize;
 
         /* This casting is to keep the compiler from issuing warnings. */

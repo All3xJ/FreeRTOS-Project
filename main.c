@@ -54,6 +54,8 @@ required UART registers. */
 
 #endif
 
+#define DEFAULT_TASK_PRIORITY		( tskIDLE_PRIORITY + 1 )	// tskIDLE_PRIORITY=0 which is the lowest priority. We set the default priority to 1, so that IDLE task can never preempt the other tasks.
+
 
 /*
  * Printf() output is sent to the serial port.  Initialise the serial hardware.
@@ -96,12 +98,12 @@ void main( void )
 	#endif
 
 	#if (DEBUG_WITH_STATS==1)	// if we want stats, then we need a larger stack to hold the buffer (DEBUGSTATSBUFLEN) + 100 for any other variables used
-	xTaskCreate(vCommandlineTask, "Commandline Task", configMINIMAL_STACK_SIZE+DEBUGSTATSBUFLEN+100, NULL, tskIDLE_PRIORITY + 1, NULL);
+	xTaskCreate(vCommandlineTask, "Commandline Task", configMINIMAL_STACK_SIZE+DEBUGSTATSBUFLEN+100, NULL, DEFAULT_TASK_PRIORITY, NULL);
 	#else
-	xTaskCreate(vCommandlineTask, "Commandline Task", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+	xTaskCreate(vCommandlineTask, "Commandline Task", configMINIMAL_STACK_SIZE, NULL, DEFAULT_TASK_PRIORITY, NULL);
 	#endif
 
-	xTaskCreate(vLEDTask, "Led Task", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, &xHandleLED);
+	xTaskCreate(vLEDTask, "Led Task", configMINIMAL_STACK_SIZE, NULL, DEFAULT_TASK_PRIORITY, &xHandleLED);
 
 
   	vTaskStartScheduler();

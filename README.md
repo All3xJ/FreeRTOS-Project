@@ -101,10 +101,10 @@ void main( void )
 {
     #if (DEBUG_WITH_STATS==1)
     // Create vCommandlinetask with a larger stack for stats processing
-    xTaskCreate(vCommandlineTask, "Commandline Task", configMINIMAL_STACK_SIZE+DEBUGSTATSBUFLEN+100, NULL, tskIDLE_PRIORITY + 1, NULL);
+    xTaskCreate(vCommandlineTask, "Commandline Task", configMINIMAL_STACK_SIZE+DEBUGSTATSBUFLEN+100, NULL, DEFAULT_TASK_PRIORITY, NULL);
     #else
     // If we don't want run time stats, we can have a stack of ordinary size
-    xTaskCreate(vCommandlineTask, "Commandline Task", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    xTaskCreate(vCommandlineTask, "Commandline Task", configMINIMAL_STACK_SIZE, NULL, DEFAULT_TASK_PRIORITY, NULL);
     #endif
 
     // ... 
