@@ -122,6 +122,7 @@ static void prvNewPrintString(const char *pcString);
 /*** SEE THE COMMENTS AT THE TOP OF THIS FILE ***/
 SemaphoreHandle_t xMutex;
 int *buffer;
+TaskHandle_t consumerHandle;
 
 /* The tasks block for a pseudo random time between 0 and xMaxBlockTime ticks. */
 const TickType_t xMaxBlockTimeTicks = 0x20;
@@ -133,14 +134,15 @@ void main_blinky(void)
 
 	if (xMutex != NULL && buffer != NULL)
 	{
-		xTaskCreate(producerTask, "producer", 1000, (void *)42, 3, NULL);
-		xTaskCreate(consumerTask, "consumer", 1000, NULL, 1, NULL);
-		vTaskStartScheduler();
+		xTaskCreate(producerTask, "producer", 1000, (void *)5, 3, NULL);
+
+		xTaskCreate(consumerTask, "consumer", 1000, NULL, 1, &consumerHandle);
 	}
+
+	vTaskStartScheduler();
 
 	for (;;)
 	{
-		vApplicationIdleHook();
 	};
 }
 
@@ -249,7 +251,6 @@ static void prvNewPrintString(const char *pcString)
 		vTaskDelay(1000);
 	}
 	xSemaphoreGive(xMutex);
-	vTaskDelete(NULL);
 
 	/* Allow any key to stop the application running.  A real application that
 	actually used the key value should protect access to the keyboard too.  A
@@ -288,13 +289,18 @@ static void prvPrintTask(void *pvParameters)
 
 static void consumerTask(void *pvParameters)
 {
-	xSemaphoreTake(xMutex, portMAX_DELAY);
+
+	for (;;)
 	{
-		vTaskDelay(1000);
-		printf("im the consumer, printing the buffer value: %d", buffer);
-		vTaskDelay(1000);
+		xSemaphoreTake(xMutex, portMAX_DELAY);
+		{
+			vTaskDelay(1000);
+			printf("im the consumer, printing the buffer value: %d\n", buffer);
+		}
+		xSemaphoreGive(xMutex);
+		vTaskDelay(2000);
 	}
-	xSemaphoreGive(xMutex);
+	vTaskDelete(NULL);
 }
 
 static void producerTask(void *pvParameters)
@@ -302,14 +308,18 @@ static void producerTask(void *pvParameters)
 	int argVal;
 	argVal = (int)pvParameters;
 
-	xSemaphoreTake(xMutex, portMAX_DELAY);
+	for (int i = 1; i <= argVal; i++)
 	{
-		vTaskDelay(1000);
-		buffer = argVal;
-		printf("im the producer, writing \n\r%d\n\ron the buffer \n\r", argVal);
-		vTaskDelay(2000);
+		xSemaphoreTake(xMutex, portMAX_DELAY);
+		{
+			vTaskDelay(1000);
+			buffer = i;
+			printf("im the producer, writing %d on the buffer \n\r", buffer);
+		}
+		xSemaphoreGive(xMutex);
+		vTaskDelay(3000);
 	}
-	xSemaphoreGive(xMutex);
 
+	vTaskDelete(consumerHandle);
 	vTaskDelete(NULL);
 }
