@@ -301,11 +301,11 @@ void vPortFree( void * pv )
         pxLink = ( void * ) puc;
 
         configASSERT( heapBLOCK_IS_ALLOCATED( pxLink ) != 0 );
-        configASSERT( pxLink->pxNextFreeBlock == NULL );
+        configASSERT( pxLink->pxNextFreeBlock == NULL );    // check to verify if the block is allocated (since in malloc after a block is allocated, this is performed: pxBlock->pxNextFreeBlock = NULL;)
 
         if( heapBLOCK_IS_ALLOCATED( pxLink ) != 0 )
         {
-            if( pxLink->pxNextFreeBlock == NULL )
+            if( pxLink->pxNextFreeBlock == NULL )   // check to verify if the block is allocated (since in malloc after a block is allocated, this is performed: pxBlock->pxNextFreeBlock = NULL;)
             {
                 /* The block is being returned to the heap - it is no longer
                  * allocated. */

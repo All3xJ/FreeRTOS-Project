@@ -15,18 +15,37 @@ energy.
 Upon asynchronous input of a character from the keyboard, the
 `UART0RX_Handler` routine is activated to handle the reception. This
 routine extracts the character from the UART data register and forwards
-it to a FreeRTOS queue. `vCommandlineTask` will process them.
+it to a FreeRTOS queue. `vCommandlineTask` will receive these characters from that queue and will process the string commands.
 
     void UART0RX_Handler(void) {
-        // Check if RX interrupt occurred
-        if (UART0_INTSTATUS == 2) {
-            // Read character and send it to FreeRTOS queue
-            char c = UART0_DATA;
+        if (UART0_INTSTATUS == 2) {     // Check if RX interrupt occurred
+            char c = UART0_DATA;        // Read character and send it to FreeRTOS queue
             xQueueSendToBackFromISR(xQueueUART, &c, NULL);
-            // Clear interrupt status
-            UART0_INTSTATUS = 2;
+            UART0_INTSTATUS = 2;        // Clear interrupt status
         }
     }
+
+    static void vCommandlineTask(void *pvParameters) {
+        char c;
+        char inputString[NORMALBUFLEN];  
+        while(1){
+            int index = 0;
+            while (index < NORMALBUFLEN-1) {
+                xQueueReceive(xQueueUART, &c, portMAX_DELAY);	// Receive character from ISR
+
+                if (c == '\r') {	// Break if '\r' is entered, i.e., if enter is pressed
+                    break;
+                }
+
+                inputString[index] = c;		// Add character to string
+                index++;
+            }
+            inputString[index] = '\0';		// Add string terminator
+            
+            executeCommand(inputString);    // Execute command
+        }
+}
+
 
 ### UART Initialization
 
