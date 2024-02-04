@@ -52,7 +52,7 @@ void vTaskFunction(void *pvParameters);
 	#define configGENERATE_RUN_TIME_STATS 0
 #endif
 
-#define configUSE_TICKLESS_IDLE         0
+#define configUSE_TICKLESS_IDLE         1	// allows to stop the SysTick to enter in Sleep Mode to have low power consumption
 #define configUSE_PREEMPTION			1
 #define configUSE_IDLE_HOOK				0
 #define configUSE_TICK_HOOK				1

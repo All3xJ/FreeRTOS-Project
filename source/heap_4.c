@@ -190,7 +190,7 @@ void * pvPortMalloc( size_t xWantedSize )
                 pxPreviousBlock = &xStart;
                 pxBlock = xStart.pxNextFreeBlock;
 
-                while( ( pxBlock->xBlockSize < xWantedSize ) && ( pxBlock->pxNextFreeBlock != NULL ) )
+                while( ( pxBlock->xBlockSize < xWantedSize ) && ( pxBlock->pxNextFreeBlock != NULL ) )  // I look for a free block of enough size
                 {
                     pxPreviousBlock = pxBlock;
                     pxBlock = pxBlock->pxNextFreeBlock;
@@ -198,7 +198,7 @@ void * pvPortMalloc( size_t xWantedSize )
 
                 /* If the end marker was reached then a block of adequate size
                  * was not found. */
-                if( pxBlock != pxEnd )
+                if( pxBlock != pxEnd )  // if it found the block
                 {
                     /* Return the memory space pointed to - jumping over the
                      * BlockLink_t structure at its start. */
@@ -206,7 +206,7 @@ void * pvPortMalloc( size_t xWantedSize )
 
                     /* This block is being returned for use so must be taken out
                      * of the list of free blocks. */
-                    pxPreviousBlock->pxNextFreeBlock = pxBlock->pxNextFreeBlock;
+                    pxPreviousBlock->pxNextFreeBlock = pxBlock->pxNextFreeBlock;    // it "skips" the found free block since this free block will be allocated. so it's no more a free block and needs to be skipped in the linked list
 
                     /* If the block is larger than required it can be split into
                      * two. */
@@ -246,7 +246,7 @@ void * pvPortMalloc( size_t xWantedSize )
                     /* The block is being returned - it is allocated and owned
                      * by the application and has no "next" block. */
                     heapALLOCATE_BLOCK( pxBlock );
-                    pxBlock->pxNextFreeBlock = NULL;
+                    pxBlock->pxNextFreeBlock = NULL;    // this will be used to check inside pvPortFree that a block is allocated... in fact here it puts NULL because it does not have a next free block not being free block lol
                     xNumberOfSuccessfulAllocations++;
                 }
                 else
@@ -427,7 +427,7 @@ static void prvInsertBlockIntoFreeList( BlockLink_t * pxBlockToInsert ) /* PRIVI
     uint8_t * puc;
 
     /* Iterate through the list until a block is found that has a higher address
-     * than the block being inserted. */
+     * than the block being inserted. */    // THIS IS FIRST-FIT
     for( pxIterator = &xStart; pxIterator->pxNextFreeBlock < pxBlockToInsert; pxIterator = pxIterator->pxNextFreeBlock )
     {
         /* Nothing to do here, just iterate to the right position. */

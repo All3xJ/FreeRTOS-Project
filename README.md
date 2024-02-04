@@ -44,7 +44,7 @@ it to a FreeRTOS queue. `vCommandlineTask` will receive these characters from th
             
             executeCommand(inputString);    // Execute command
         }
-}
+    }
 
 
 ### UART Initialization
@@ -59,13 +59,12 @@ the UART RX interrupt and creates a FreeRTOS queue for UART data.
     fewer CPU cycles.
 
 -   **CTRL:** The value 11 is employed to enable receiving,
-    transmitting, and activate the RX interrupt.
+    transmitting, and to activate the RX interrupt.
 
--   **NVIC (Nested Vectored Interrupt Controller):** It efficiently
+-   **NVIC (Nested Vectored Interrupt Controller):** This controller efficiently
     handles interrupts, closely integrated with the processor core for
-    low-latency processing. In the provided code snippet, we enable the
-    UART RX handler to execute upon the arrival of a UART RX interrupt
-    at the CPU (below we set inside the vector table our handler to be
+    low-latency processing. In the provided code snippet, we enable our
+    UART RX handler to execute upon the arrival (to the CPU) of a UART RX interrupt (below we set inside the vector table our handler to be
     executed). The priority is configured to the highest logical value,
     respecting the reserved value designated for OS interrupts.
 
@@ -155,11 +154,11 @@ void executeCommand(char command[]) {
 }
 ```
 
-### Timer 0 Initialization
+### Timer0 Initialization
 
-The Timer 0 initialization function (`initializeTimer0`) is executed
+The Timer0 initialization function (`initializeTimer0`) is executed
 when runtime statistics are enabled. The `RELOAD` value is crucial for
-determining the interrupt frequency of Timer 0. In our configuration,
+determining the interrupt frequency of Timer0, because Timer0 generates the interrupt when `RELOAD` reaches 0. In our configuration,
 since `RELOAD` value is being decremented each clock cycle, if we put a
 value equal to configCPU_CLOCK_HZ/10kHz we
 achieve a 10 kHz timer interrupt frequency. We do this because, for
@@ -170,7 +169,7 @@ than FreeRTOS SysTick (1kHz).
 void main( void )
 {
     #if (DEBUG_WITH_STATS==1)
-    // Initialize Timer 0 for runtime statistics (10 kHz interrupt frequency)
+    // Initialize Timer0 for runtime statistics (10 kHz interrupt frequency)
     initializeTimer0(2500);
     #endif
 
@@ -178,26 +177,26 @@ void main( void )
 }
 
 #if (DEBUG_WITH_STATS==1)
-// Timer 0 initialization for runtime statistics
+// Timer0 initialization for runtime statistics
 static void initializeTimer0(unsigned int ticks){
-    // Clear Timer 0 interrupt
+    // Clear Timer0 interrupt
     CMSDK_TIMER0->INTCLEAR =  (1ul <<  0);
 
-    // Set the reload value (10 kHz Timer 0 interrupt frequency)
+    // Set the reload value (10 kHz Timer0 interrupt frequency)
     CMSDK_TIMER0->RELOAD = 2500;
 
-    // Enable Timer 0 interrupt and Timer
+    // Enable Timer0 interrupt and Timer
     CMSDK_TIMER0->CTRL = ((1ul <<  3) | (1ul <<  0));
 
-    // Enable Timer 0 interrupt in NVIC
+    // Enable Timer0 interrupt in NVIC
     NVIC_EnableIRQ(TIMER0_IRQn);
 }
 #endif
 ```
 
-### Timer 0 Handler
+### Timer0 Handler
 
-We modified the Timer 0 interrupt handler as follows:
+We modified the Timer0 interrupt handler as follows:
 
 ``` {.objectivec language="C"}
 void TIMER0_Handler( void )
@@ -221,6 +220,21 @@ array within the `startup_gcc.c` file.
 ( uint32_t * ) &TIMER0_Handler, // our handler modified for statistics
 #endif
 ```
+
+# IDLE low-power state (tickless)
+
+Tickless idle mode enables the board to enter a low-power state during idle periods, effectively reducing power consumption. This mode also suppresses the SysTick interrupt for a specified duration or until an external interrupt occurs.
+
+### Enabling Tickless Idle Mode
+Tickless idle mode can be enabled by setting `configUSE_TICKLESS_IDLE` to 1 in FreeRTOSConfig.h. This activates the built-in tickless idle functionality provided by the FreeRTOS port.
+
+### Default Port Function: vPortSuppressTicksAndSleep
+To implement tickless idle mode, this FreeRTOS port provides a default function called `vPortSuppressTicksAndSleep`. This function is automatically called during idle: it manages the transition of the microcontroller into a low-power state during idle periods.
+
+### How vPortSuppressTicksAndSleep Works
+1. **Calculating Idle Time**: The function calculates the duration of idle time based on the expected idle time parameter passed to it.
+2. **Stopping SysTick**: It temporarily stops the SysTick timer to prevent periodic interrupts. This reduces power consumption by lowering the frequency of SysTick interrupts.
+3. **Entering Low-Power State**: The function enters a low-power state using the WFI (Wait For Interrupt) instruction, which halts the processor until an interrupt occurs or the SysTick reload completes.
 
 # LED Animations
 

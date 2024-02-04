@@ -541,7 +541,7 @@ void xPortSysTickHandler( void )
             if( xModifiableIdleTime > 0 )
             {
                 __asm volatile ( "dsb" ::: "memory" );
-                __asm volatile ( "wfi" );
+                __asm volatile ( "wfi" );   // performs the actual sleep using the WFI (Wait For Interrupt) instruction to put the processor on hold until an interrupt arrives.
                 __asm volatile ( "isb" );
             }
 
