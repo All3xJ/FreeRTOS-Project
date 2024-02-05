@@ -53,13 +53,13 @@ uint32_t RTOS_AppGetRuntimeCounterValueFromISR(void) {
 #endif
 
 void TIMER0_Handler( void )
-{
+{	
 	/* Clear interrupt. */
 	CMSDK_TIMER0->INTCLEAR = ( 1ul <<  0 );
 
 	ulNestCount++;	// we increment the counter that will be used to calculate the statistics for each task
 
-	// commento questa parte perchè non è ciò che ci serve
+	// I comment this part because it is not what we need
 	// if( ulNest > 0 )
 	// {
 	// 	/* This interrupt occurred in between the nesting count being incremented
@@ -74,14 +74,14 @@ void TIMER0_Handler( void )
 
 void TIMER1_Handler( void )
 {
-	/* Increment the nest count while inside this ISR as a crude way of the
-	higher priority timer interrupt knowing if it interrupted the execution of
-	this ISR. */
-	ulNest++;
-	/* Clear interrupt. */
-	CMSDK_TIMER1->INTCLEAR = ( 1ul <<  0 );
-	portEND_SWITCHING_ISR( xFirstTimerHandler() );
-	ulNest--;
+	// /* Increment the nest count while inside this ISR as a crude way of the
+	// higher priority timer interrupt knowing if it interrupted the execution of
+	// this ISR. */
+	// ulNest++;
+	// /* Clear interrupt. */
+	// CMSDK_TIMER1->INTCLEAR = ( 1ul <<  0 );
+	// portEND_SWITCHING_ISR( xFirstTimerHandler() );
+	// ulNest--;
 }
 /*-----------------------------------------------------------*/
 

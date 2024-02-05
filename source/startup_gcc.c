@@ -61,7 +61,7 @@ extern uint32_t _estack;
 
 /* Vector table. */
 const uint32_t* isr_vector[] __attribute__((section(".isr_vector"))) =
-{
+{                                                               // interrupt priorities are "inverse": logically higher is numerically lower.
     ( uint32_t * ) &_estack,
     ( uint32_t * ) &Reset_Handler,     // Reset                -15
     ( uint32_t * ) &Default_Handler,   // NMI_Handler          -14

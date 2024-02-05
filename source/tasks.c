@@ -1306,7 +1306,7 @@ static void prvAddNewTaskToReadyList( TCB_t * pxNewTCB )
         if( xTicksToDelay > ( TickType_t ) 0U )
         {
             configASSERT( uxSchedulerSuspended == 0 );
-            vTaskSuspendAll();
+            vTaskSuspendAll();  // this is to stop the scheduler to be sure to perform the below prvAddCurrentTaskToDelayedList since it's based on the current running task
             {
                 traceTASK_DELAY();
 
@@ -1319,7 +1319,7 @@ static void prvAddNewTaskToReadyList( TCB_t * pxNewTCB )
                  * executing task. */
                 prvAddCurrentTaskToDelayedList( xTicksToDelay, pdFALSE );
             }
-            xAlreadyYielded = xTaskResumeAll();
+            xAlreadyYielded = xTaskResumeAll(); // resume scheduler
         }
         else
         {
@@ -2162,7 +2162,7 @@ void vTaskSuspendAll( void )
         }
         else
         {
-            xReturn = xNextTaskUnblockTime - xTickCount;
+            xReturn = xNextTaskUnblockTime - xTickCount;    // so this make sure that we will wake systick when the vTaskDelay time ends
         }
 
         return xReturn;
@@ -4579,6 +4579,15 @@ static void prvResetNextTaskUnblockTime( void )
          * equate to NULL. */
         pxTaskStatusArray = pvPortMalloc( uxCurrentNumberOfTasks * sizeof( TaskStatus_t ) ); /*lint !e9079 All values returned by pvPortMalloc() have at least the alignment required by the MCU's stack and this allocation allocates a struct that has the alignment requirements of a pointer. */
 
+        const char *taskStateStrings[] = {  // added by us to print the string of corresponding enum state.
+            "Running",
+            "Ready",
+            "Blocked",
+            "Suspended",
+            "Deleted",
+            "Invalid"
+        };
+
         if( pxTaskStatusArray != NULL )
         {
             /* Generate the (binary) data. */
@@ -4613,7 +4622,7 @@ static void prvResetNextTaskUnblockTime( void )
                         {
                             /* sizeof( int ) == sizeof( long ) so a smaller
                              * printf() library can be used. */
-                            sprintf( pcWriteBuffer, "\t%u\t\t%u%%\r\n", ( unsigned int ) pxTaskStatusArray[ x ].ulRunTimeCounter, ( unsigned int ) ulStatsAsPercentage ); /*lint !e586 sprintf() allowed as this is compiled with many compilers and this is a utility function only - not part of the core kernel implementation. */
+                            sprintf( pcWriteBuffer, "\t%u\t\t%u%%\t\t%s\r\n", ( unsigned int ) pxTaskStatusArray[ x ].ulRunTimeCounter, ( unsigned int ) ulStatsAsPercentage, taskStateStrings[pxTaskStatusArray[ x ].eCurrentState] ); /*lint !e586 sprintf() allowed as this is compiled with many compilers and this is a utility function only - not part of the core kernel implementation. */
                         }
                         #endif
                     }
@@ -4629,7 +4638,7 @@ static void prvResetNextTaskUnblockTime( void )
                         {
                             /* sizeof( int ) == sizeof( long ) so a smaller
                              * printf() library can be used. */
-                            sprintf( pcWriteBuffer, "\t%u\t\t<1%%\r\n", ( unsigned int ) pxTaskStatusArray[ x ].ulRunTimeCounter ); /*lint !e586 sprintf() allowed as this is compiled with many compilers and this is a utility function only - not part of the core kernel implementation. */
+                            sprintf( pcWriteBuffer, "\t%u\t\t<1%%\t\t%s\r\n", ( unsigned int ) pxTaskStatusArray[ x ].ulRunTimeCounter, taskStateStrings[pxTaskStatusArray[ x ].eCurrentState] ); /*lint !e586 sprintf() allowed as this is compiled with many compilers and this is a utility function only - not part of the core kernel implementation. */
                         }
                         #endif
                     }
@@ -5339,7 +5348,7 @@ static void prvAddCurrentTaskToDelayedList( TickType_t xTicksToWait,
             xTimeToWake = xConstTickCount + xTicksToWait;
 
             /* The list item will be inserted in wake time order. */
-            listSET_LIST_ITEM_VALUE( &( pxCurrentTCB->xStateListItem ), xTimeToWake );
+            listSET_LIST_ITEM_VALUE( &( pxCurrentTCB->xStateListItem ), xTimeToWake );  // it basically sets the time to wake into the task's TCB
 
             if( xTimeToWake < xConstTickCount )
             {
@@ -5351,7 +5360,7 @@ static void prvAddCurrentTaskToDelayedList( TickType_t xTicksToWait,
             {
                 /* The wake time has not overflowed, so the current block list
                  * is used. */
-                vListInsert( pxDelayedTaskList, &( pxCurrentTCB->xStateListItem ) );
+                vListInsert( pxDelayedTaskList, &( pxCurrentTCB->xStateListItem ) );    // it basically inserts this task (with its associated xTimeToWake) in the list of the delayed task list of the system
 
                 /* If the task entering the blocked state was placed at the
                  * head of the list of blocked tasks then xNextTaskUnblockTime

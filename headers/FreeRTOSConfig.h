@@ -52,7 +52,12 @@ void vTaskFunction(void *pvParameters);
 	#define configGENERATE_RUN_TIME_STATS 0
 #endif
 
-#define configUSE_TICKLESS_IDLE         1	// allows to stop the SysTick to enter in Sleep Mode to have low power consumption
+#if (DEBUG_WITH_STATS==1)	// if DEBUG_WITH_STATS is enabled, it doesn't make sense to enable Tickless Idle, since the continously generation of Timer0 interrupts make Tickless Idle to be both useless and paradoxically more resource-consuming. lastly, the continous generation of Timer0 interrupts during Tickless IDLE create systick count DRIFT. the idea of tickless idle is to enable it if the processor doesn’t have to do anything for a long time, and so it can enter in a mode optimized for not doing things. so it doesn't have any sense with DEBUG_WITH_STATS's Timer0 10khz interrups
+	#define configUSE_TICKLESS_IDLE         0
+#else
+	#define configUSE_TICKLESS_IDLE         1	// allows to stop the SysTick to enter in Sleep Mode to have low power consumption
+#endif
+
 #define configUSE_PREEMPTION			1
 #define configUSE_IDLE_HOOK				0
 #define configUSE_TICK_HOOK				1

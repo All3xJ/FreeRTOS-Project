@@ -507,7 +507,7 @@ void xPortSysTickHandler( void )
              * pending, then clear the IRQ, suppressing the first tick, and correct
              * the reload value to reflect that the second tick period is already
              * underway.  The expected idle time is always at least two ticks. */
-            ulReloadValue = ulSysTickDecrementsLeft + ( ulTimerCountsForOneTick * ( xExpectedIdleTime - 1UL ) );
+            ulReloadValue = ulSysTickDecrementsLeft + ( ulTimerCountsForOneTick * ( xExpectedIdleTime - 1UL ) );    // we set the new HIGHER reload value that we use to suppress systick for "reload" decrements
 
             if( ( portNVIC_INT_CTRL_REG & portNVIC_PEND_SYSTICK_SET_BIT ) != 0 )
             {
@@ -521,14 +521,14 @@ void xPortSysTickHandler( void )
             }
 
             /* Set the new reload value. */
-            portNVIC_SYSTICK_LOAD_REG = ulReloadValue;
+            portNVIC_SYSTICK_LOAD_REG = ulReloadValue;  // we update the new HIGHER reload value that we use to suppress systick for "reload" decrements
 
             /* Clear the SysTick count flag and set the count value back to
              * zero. */
             portNVIC_SYSTICK_CURRENT_VALUE_REG = 0UL;
 
             /* Restart SysTick. */
-            portNVIC_SYSTICK_CTRL_REG |= portNVIC_SYSTICK_ENABLE_BIT;
+            portNVIC_SYSTICK_CTRL_REG |= portNVIC_SYSTICK_ENABLE_BIT;   // we start again systick but with the HIGHER reload value to "suppress it" for some time to spare energy
 
             /* Sleep until something happens.  configPRE_SLEEP_PROCESSING() can
              * set its parameter to 0 to indicate that its implementation contains
@@ -541,10 +541,9 @@ void xPortSysTickHandler( void )
             if( xModifiableIdleTime > 0 )
             {
                 __asm volatile ( "dsb" ::: "memory" );
-                __asm volatile ( "wfi" );   // performs the actual sleep using the WFI (Wait For Interrupt) instruction to put the processor on hold until an interrupt arrives.
+                __asm volatile ( "wfi" );   // performs the actual sleep using the WFI (Wait For Interrupt) instruction to put the processor on hold until an interrupt arrives. or until the delayed systick arrives.
                 __asm volatile ( "isb" );
-            }
-
+            }            
             configPOST_SLEEP_PROCESSING( xExpectedIdleTime );
 
             /* Re-enable interrupts to allow the interrupt that brought the MCU
@@ -597,7 +596,7 @@ void xPortSysTickHandler( void )
                  * forward by one less than the time spent waiting. */
                 ulCompleteTickPeriods = xExpectedIdleTime - 1UL;
             }
-            else
+            else    // this INTRODUCES DRIFTs. because here we do an approximation.
             {
                 /* Something other than the tick interrupt ended the sleep. */
 
@@ -621,15 +620,15 @@ void xPortSysTickHandler( void )
 
                 /* Work out how long the sleep lasted rounded to complete tick
                  * periods (not the ulReload value which accounted for part
-                 * ticks). */
+                 * ticks). */   // note that ulTimerCountsForOneTick is configSYSTICK_CLOCK_HZ / configTICK_RATE_HZ so literally how many clocks to have one systick
                 ulCompletedSysTickDecrements = ( xExpectedIdleTime * ulTimerCountsForOneTick ) - ulSysTickDecrementsLeft;
 
                 /* How many complete tick periods passed while the processor
-                 * was waiting? */
-                ulCompleteTickPeriods = ulCompletedSysTickDecrements / ulTimerCountsForOneTick;
+                 * was waiting? */  // HERE THERE IS THE APPROXIMATION THAT INTRODUCE THE DRIFT
+                ulCompleteTickPeriods = ulCompletedSysTickDecrements / ulTimerCountsForOneTick;     // calculate the actual number of ticks that correspond to the non-updating decrements performed. so this is an APPROXIMATION (since it's an integer) because these are the COMPLETE tick periods
 
                 /* The reload value is set to whatever fraction of a single tick
-                 * period remains. */
+                 * period remains. */       // HERE WE APPLY THE APPROXIMATION THAT INTRODUCE THE DRIFT
                 portNVIC_SYSTICK_LOAD_REG = ( ( ulCompleteTickPeriods + 1UL ) * ulTimerCountsForOneTick ) - ulCompletedSysTickDecrements;
             }
 
@@ -665,8 +664,8 @@ void xPortSysTickHandler( void )
             #endif /* portNVIC_SYSTICK_CLK_BIT_CONFIG */
 
             /* Step the tick to account for any tick periods that elapsed. */
-            vTaskStepTick( ulCompleteTickPeriods );
-
+            vTaskStepTick( ulCompleteTickPeriods ); // I HAVE TO UPDATE THE TICK COUNT TO THE NUMBER OF TICKS COMPLETED THAT WERE NOT ADDED TO TICK COUNT.
+            
             /* Exit with interrupts enabled. */
             __asm volatile ( "cpsie i" ::: "memory" );
         }
