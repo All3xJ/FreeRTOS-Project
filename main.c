@@ -306,11 +306,13 @@ void *malloc( size_t size )
 
 
 void UART0RX_Handler(void){
+	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 	if (UART0_INTSTATUS == 2){	// if second bit is at 1 it means there was an rx interrupt
 		char c = UART0_DATA;	// we read character that was written by the user
-		xQueueSendToBackFromISR(xQueueUART, &c, NULL);
+		xQueueSendToBackFromISR(xQueueUART, &c, &xHigherPriorityTaskWoken);
 		UART0_INTSTATUS = 2;	// we put second bit to 1 to clear the interrupt
 	}
+	portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);	// request context-switch to run a task without waiting for next SysTick
 }
 
 

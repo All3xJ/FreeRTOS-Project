@@ -24,7 +24,18 @@ receive these characters from that queue and will process the string commands.
             xQueueSendToBackFromISR(xQueueUART, &c, NULL);  // Send the character to FreeRTOS queue
             UART0_INTSTATUS = 2;        // Clear interrupt status
         }
+        portEND_SWITCHING_ISR(pdTRUE);  // Request context-switch to run a task without waiting for next SysTick
     }
+
+    void UART0RX_Handler(void){
+        BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+        if (UART0_INTSTATUS == 2){	// Check if RX interrupt occurred
+            char c = UART0_DATA;	// Read character 
+            xQueueSendToBackFromISR(xQueueUART, &c, &xHigherPriorityTaskWoken); // Send the character to FreeRTOS queue
+            UART0_INTSTATUS = 2;	// Clear interrupt status
+        }
+        portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);    // Request context-switch to run a task without waiting for next SysTick
+}
 
     static void vCommandlineTask(void *pvParameters) {
         char c;
