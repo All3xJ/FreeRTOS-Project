@@ -103,8 +103,8 @@ Once the specified interval is reached, it calls the function `Switch_All_Led_Of
 The task then continues to wait for the next time interval, repeating this process indefinitely.
 
 ```c
-  void vLedTask(void *pvParameters)
-  {
+void vLedTask(void *pvParameters)
+{
 
 	  (void)pvParameters;
     TickType_t xLastWakeTime = xTaskGetTickCount();
