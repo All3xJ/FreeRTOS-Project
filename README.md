@@ -33,8 +33,8 @@ receiving task’s notification value.
 `xTaskNotifyGive()` takes, as an input parameter, the handle of the task to which the notification is being sent. 
 Calling `xTaskNotifyGive()` will set the receiving task’s notification state to pending.
 
-   ```c
-   
+
+```c  
 void vSensorReadTask(void *pvParameters)
 {
     //Logic for set the frequency to read values every 5 seconds
@@ -58,8 +58,8 @@ void vSensorReadTask(void *pvParameters)
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
     }
 }
+```
 
-   ```
 2. **vTemperatureNotificationHandlerTask:** is the task that handle the temperature notification.
 This task will wait until it receives a notification, so everytime the temperature tolerance threshold is exceeded this task exits the blocked state.
 This task uses ulTaskNotifyTake, which is a function that allows a task to wait in the blocked state until its notification value is greater than zero. 
@@ -111,8 +111,8 @@ The task then continues to wait for the next time interval, repeating this proce
 
     while (1) 
 	{
-        vTaskDelayUntil(&xLastWakeTime, xFrequency);
-        Switch_All_Led_Off();
+      vTaskDelayUntil(&xLastWakeTime, xFrequency);
+      Switch_All_Led_Off();
     }
 }
 

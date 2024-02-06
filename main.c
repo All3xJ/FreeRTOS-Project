@@ -325,7 +325,7 @@ void vSensorReadTask(void *pvParameters)
     }
 }
 
-static void vTemperatureNotificationHandlerTask(void *pvParameters)
+void vTemperatureNotificationHandlerTask(void *pvParameters)
 {
 	(void)pvParameters;
 
