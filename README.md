@@ -250,7 +250,7 @@ For this reason, in "FreeRTOSConfig.h", we set `configUSE_TICKLESS_IDLE` to 1 if
 ### Default Port Function: vPortSuppressTicksAndSleep
 To implement tickless idle mode, this FreeRTOS port provides a default function called `vPortSuppressTicksAndSleep`. This function is automatically called during idle: it manages the transition of the microcontroller into a low-power state during idle periods.
 
-### How vPortSuppressTicksAndSleep Works
+### How vPortSuppressTicksAndSleep works
 1. **Calculating Idle Time**: The function calculates the duration of idle time based on the expected idle time parameter passed to it.
 2. **Stopping SysTick**: The function temporarily halts the SysTick timer to prevent periodic interrupts. It accomplishes this by setting the SysTick RELOAD register based on `xNextTaskUnblockTime`, which represents the tick count when will be resumed a task. Consequently, the SysTick will resume its operation accordingly when a task should wake up, such as after a `vTaskDelay`.
 3. **Entering Low-Power State**: The function enters a low-power state using the WFI (Wait For Interrupt) instruction, which halts the processor until an interrupt occurs or the SysTick reload completes.
