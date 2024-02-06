@@ -92,7 +92,7 @@ void vTemperatureNotificationHandlerTask(void *pvParameters)
 	}
 
 }
-   ```
+```
 
 3. **HumidityNotificationHandlerTask:** is a task very similar to the previous one (`vTemperatureNotificationHandler`). 
 What changes is the action after receiving the notification. Indeed, as soon as this task receives a notification and is awakened, it lights up the second half of the LEDs (from position 4 to position 7).
@@ -106,10 +106,9 @@ The task then continues to wait for the next time interval, repeating this proce
 
 void vLedTask(void *pvParameters)
 {
-
 	  (void)pvParameters;
     TickType_t xLastWakeTime = xTaskGetTickCount();
-    const TickType_t xFrequency = pdMS_TO_TICKS(10000); //every 10 seconds
+    const TickType_t xFrequency = pdMS_TO_TICKS(10000); 
 
     while (1) 
 	  {
@@ -118,7 +117,7 @@ void vLedTask(void *pvParameters)
     }
 }
 
-   ```
+```
 
 ### LED initialization and functions used to turn on and off the LEDs
 In order to use and manipulate the LEDs on this board, we use LED_REGISTER (reference al readme di Genova)
