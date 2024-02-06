@@ -289,7 +289,7 @@ void initializeLED(void)
 }
 
 
-void vSensorReadTask(void *pvParameters)
+static void vSensorReadTask(void *pvParameters)
 {
     (void)pvParameters;
     TickType_t xLastWakeTime;
@@ -325,7 +325,7 @@ void vSensorReadTask(void *pvParameters)
     }
 }
 
-void vTemperatureNotificationHandlerTask(void *pvParameters)
+static void vTemperatureNotificationHandlerTask(void *pvParameters)
 {
 	(void)pvParameters;
 
@@ -341,7 +341,7 @@ void vTemperatureNotificationHandlerTask(void *pvParameters)
 
 }
 
-void vHumidityNotificationHandlerTask(void *pvParameters)
+static void vHumidityNotificationHandlerTask(void *pvParameters)
 {
 	(void)pvParameters;
 
@@ -369,7 +369,7 @@ void vLedTask(void *pvParameters) {
     }
 }
 
-void Switch_On_First_Half_Leds()
+static void Switch_On_First_Half_Leds()
 {
 	//Calculate the mask to turn on only the first half of the LEDs
 	uint8_t mask = (1 << 4) - 1;
