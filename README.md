@@ -18,46 +18,47 @@ routine extracts the character from the UART data register and forwards
 it to a FreeRTOS queue. `vCommandlineTask` will be in Blocked state waiting to 
 receive these characters from that queue and will process the string commands.
 
-    void UART0RX_Handler(void) {
-        if (UART0_INTSTATUS == 2) {     // Check if RX interrupt occurred
-            char c = UART0_DATA;        // Read character 
-            xQueueSendToBackFromISR(xQueueUART, &c, NULL);  // Send the character to FreeRTOS queue
-            UART0_INTSTATUS = 2;        // Clear interrupt status
-        }
-        portEND_SWITCHING_ISR(pdTRUE);  // Request context-switch to run a task without waiting for next SysTick
+```c
+void UART0RX_Handler(void) {
+    if (UART0_INTSTATUS == 2) {     // Check if RX interrupt occurred
+        char c = UART0_DATA;        // Read character 
+        xQueueSendToBackFromISR(xQueueUART, &c, NULL);  // Send the character to FreeRTOS queue
+        UART0_INTSTATUS = 2;        // Clear interrupt status
     }
-
-    void UART0RX_Handler(void){
-        BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-        if (UART0_INTSTATUS == 2){	// Check if RX interrupt occurred
-            char c = UART0_DATA;	// Read character 
-            xQueueSendToBackFromISR(xQueueUART, &c, &xHigherPriorityTaskWoken); // Send the character to FreeRTOS queue
-            UART0_INTSTATUS = 2;	// Clear interrupt status
-        }
-        portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);    // Request context-switch to run a task without waiting for next SysTick
+    portEND_SWITCHING_ISR(pdTRUE);  // Request context-switch to run a task without waiting for next SysTick
 }
 
-    static void vCommandlineTask(void *pvParameters) {
-        char c;
-        char inputString[NORMALBUFLEN];  
-        while(1){
-            int index = 0;
-            while (index < NORMALBUFLEN-1) {
-                xQueueReceive(xQueueUART, &c, portMAX_DELAY);   // puts the task in Blocked state and wait for the character received from the ISR
-
-                if (c == '\r') {    // Break if '\r' is entered, i.e., if enter is pressed
-                    break;
-                }
-
-                inputString[index] = c;     // Add character to string
-                index++;
-            }
-            inputString[index] = '\0';      // Add string terminator
-            
-            executeCommand(inputString);    // Execute command
-        }
+void UART0RX_Handler(void){
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    if (UART0_INTSTATUS == 2){	// Check if RX interrupt occurred
+        char c = UART0_DATA;	// Read character 
+        xQueueSendToBackFromISR(xQueueUART, &c, &xHigherPriorityTaskWoken); // Send the character to FreeRTOS queue
+        UART0_INTSTATUS = 2;	// Clear interrupt status
     }
+    portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);    // Request context-switch to run a task without waiting for next SysTick
+}
 
+static void vCommandlineTask(void *pvParameters) {
+    char c;
+    char inputString[NORMALBUFLEN];  
+    while(1){
+        int index = 0;
+        while (index < NORMALBUFLEN-1) {
+            xQueueReceive(xQueueUART, &c, portMAX_DELAY);   // Puts the task in Blocked state and wait for the character received from the ISR
+
+            if (c == '\r') {    // Break if '\r' is entered, i.e., if enter is pressed
+                break;
+            }
+
+            inputString[index] = c;     // Add character to string
+            index++;
+        }
+        inputString[index] = '\0';      // Add string terminator
+        
+        executeCommand(inputString);    // Execute command
+    }
+}
+```
 
 ### UART Initialization
 
@@ -72,25 +73,22 @@ the UART RX interrupt and creates a FreeRTOS queue for UART data.
 -   **CTRL:** The value 11 is employed to enable receiving,
     transmitting, and to activate the RX interrupt.
 
--   **NVIC (Nested Vectored Interrupt Controller):** This controller efficiently
-    handles interrupts, closely integrated with the processor core for
-    low-latency processing. In the provided code snippet, we enable our
-    UART RX handler to execute upon the arrival (to the CPU) of a UART RX interrupt (below we set inside the vector table our handler to be
-    executed). The priority is configured to the highest logical value,
-    respecting the reserved value designated for OS interrupts.
+-   **NVIC (Nested Vectored Interrupt Controller):** This controller efficiently handles interrupts, closely integrated with the processor core for low-latency processing. In the provided code snippet, we enable our UART RX handler to execute upon the arrival (to the CPU) of a UART RX interrupt (below we set inside the vector table our handler to be executed). The priority is configured to the highest logical value, respecting the reserved value designated for OS interrupts.
 
-        void prvUARTInit( void ) {
-            // Set baud rate and configure UART control registers
-            UART0_BAUDDIV = 16;
-            UART0_CTRL = 11;
+```c
+void prvUARTInit( void ) {
+    // Set baud rate and configure UART control registers
+    UART0_BAUDDIV = 16;
+    UART0_CTRL = 11;
 
-            // Configure NVIC settings for UART RX interrupt
-            NVIC_SetPriority(UARTRX0_IRQn, configMAX_SYSCALL_INTERRUPT_PRIORITY);
-            NVIC_EnableIRQ(UARTRX0_IRQn);
+    // Configure NVIC settings for UART RX interrupt
+    NVIC_SetPriority(UARTRX0_IRQn, configMAX_SYSCALL_INTERRUPT_PRIORITY);
+    NVIC_EnableIRQ(UARTRX0_IRQn);
 
-            // Create FreeRTOS queue for UART data
-            xQueueUART = xQueueCreate(NORMALBUFLEN, sizeof(char));
-        }
+    // Create FreeRTOS queue for UART data
+    xQueueUART = xQueueCreate(NORMALBUFLEN, sizeof(char));
+}
+```
 
 ### Vector Table Update
 
@@ -100,7 +98,9 @@ row of the `isr_vector` array within the "startup_gcc.c" file. This
 addition ensures that our custom handler to be invoked upon UART RX
 interrupts.
 
-    ( uint32_t * ) &UART0RX_Handler,
+```c
+( uint32_t * ) &UART0RX_Handler,
+```
 
 # CPU Usage Statistics
 
@@ -127,7 +127,7 @@ statistics.
 
 Here is the implementation:
 
-``` {.objectivec language="C"}
+```c
 void main( void )
 {
     #if (DEBUG_WITH_STATS==1)
@@ -179,7 +179,7 @@ achieve a 10 kHz timer interrupt frequency. We do this because, for
 statistics tracking, it's suggested to have a 10 times faster frequency
 than FreeRTOS SysTick (1kHz).
 
-``` {.objectivec language="C"}
+```c
 void main( void )
 {
     #if (DEBUG_WITH_STATS==1)
@@ -212,7 +212,7 @@ static void initializeTimer0(unsigned int ticks){
 
 We modified the Timer0 interrupt handler as follows:
 
-``` {.objectivec language="C"}
+```c
 void TIMER0_Handler( void )
 {
     /* Clear interrupt. */
@@ -229,9 +229,9 @@ peripheral generates an interrupt (every 10 kHz), it is crucial to
 include the handler's address in the appropriate row of the `isr_vector`
 array within the "startup_gcc.c" file.
 
-``` {.objectivec language="C"}
+```c
 #if (DEBUG_WITH_STATS==1)
-( uint32_t * ) &TIMER0_Handler, // our handler modified for statistics
+( uint32_t * ) &TIMER0_Handler, // Our handler modified for statistics
 #endif
 ```
 
@@ -263,24 +263,28 @@ For sleep time during animations, we use `vTaskDelay` by default. However, if `D
 
 ![ledanimations.png](./examplesImages/ledanimations.png)
 
-    static void vLEDTask(void *pvParameters) {
-        (void)pvParameters; // Ignore the unused parameter
+```c
+static void vLEDTask(void *pvParameters) {
+    (void)pvParameters; // Ignore the unused parameter
 
-        // LED Effects
-        while(1){
-            vTaskSuspend(NULL);
+    // LED Effects
+    while(1){
+        vTaskSuspend(NULL);
 
-            LEDKnightRider();   // Knight Rider light effect
-            LEDConstantBlink(); // Constant Blink light effect
-        }
+        LEDKnightRider();   // Knight Rider light effect
+        LEDConstantBlink(); // Constant Blink light effect
     }
+}
+```
 
 ### LED Control details
 
 To manage the state of LEDs on this board, we use the `LED_PORT`
 register. Here's how it's defined:
 
-    #define LED_PORT    (MPS2_SCC->LEDS)
+```c
+#define LED_PORT    (MPS2_SCC->LEDS)
+```
 
 This corresponds to the CFGREG1 register within the Serial Communication
 Controller (SCC) interface on the board. In CFG_REG1, bits \[7:0\] are
@@ -291,16 +295,18 @@ The code above uses bitwise operations to control specific LED pins based on
 the desired LED number through the `Switch_Led_On` and `Switch_Led_Off` used by LEDKnightRider
 and `Switch_All_Led_On` and `Switch_All_Led_Off` used by LEDConstantBlink:
 
-    void Switch_Led_On(int ledN){
-        if (ledN <= 7 && ledN >= 0){
-            LED_PORT |= (1U << ledN);    // Turn on the LED specified by ledN
-        }
-        // Note: Switch_Led_Off is analogous but with bitwise AND with complement:
-        // LED_PORT &= ~(1U << ledN);   // Turn off the LED specified by ledN
+```c
+void Switch_Led_On(int ledN){
+    if (ledN <= 7 && ledN >= 0){
+        LED_PORT |= (1U << ledN);    // Turn on the LED specified by ledN
     }
+    // Note: Switch_Led_Off is analogous but with bitwise AND with complement:
+    // LED_PORT &= ~(1U << ledN);   // Turn off the LED specified by ledN
+}
 
-    void Switch_All_Led_On(){
-        LED_PORT |=  (1U << ledN);  // Bitwise OR operation to turn on all LEDs
-        // Note: Switch_All_Led_Off is analogous but with bitwise AND with complement:
-        // LED_PORT &= ~0xFF;   // Turn off all LEDs in the last 7 bits of the LED_PORT register
-    }
+void Switch_All_Led_On(){
+    LED_PORT |=  (1U << ledN);  // Bitwise OR operation to turn on all LEDs
+    // Note: Switch_All_Led_Off is analogous but with bitwise AND with complement:
+    // LED_PORT &= ~0xFF;   // Turn off all LEDs in the last 7 bits of the LED_PORT register
+}
+```
