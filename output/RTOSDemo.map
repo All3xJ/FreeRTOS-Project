@@ -5265,7 +5265,7 @@ END GROUP
 OUTPUT(./output/RTOSDemo.out elf32-littlearm)
 LOAD linker stubs
 
-.debug_info     0x00000000     0x7cae
+.debug_info     0x00000000     0x7caa
  .debug_info    0x00000000      0xaca ./output/IntQueue.o
  .debug_info    0x00000aca      0x583 ./output/IntQueueTimer.o
  .debug_info    0x0000104d      0x4af ./output/heap_4.o
@@ -5276,9 +5276,9 @@ LOAD linker stubs
  .debug_info    0x000037d0      0x88b ./output/startup_gcc.o
  .debug_info    0x0000405b     0x2105 ./output/tasks.o
  .debug_info    0x00006160     0x1222 ./output/timers.o
- .debug_info    0x00007382      0x92c ./output/main.o
+ .debug_info    0x00007382      0x928 ./output/main.o
 
-.debug_abbrev   0x00000000     0x1ab8
+.debug_abbrev   0x00000000     0x1ab9
  .debug_abbrev  0x00000000      0x286 ./output/IntQueue.o
  .debug_abbrev  0x00000286      0x1d7 ./output/IntQueueTimer.o
  .debug_abbrev  0x0000045d      0x206 ./output/heap_4.o
@@ -5289,7 +5289,7 @@ LOAD linker stubs
  .debug_abbrev  0x00000e46      0x270 ./output/startup_gcc.o
  .debug_abbrev  0x000010b6      0x3b9 ./output/tasks.o
  .debug_abbrev  0x0000146f      0x2e2 ./output/timers.o
- .debug_abbrev  0x00001751      0x367 ./output/main.o
+ .debug_abbrev  0x00001751      0x368 ./output/main.o
 
 .debug_aranges  0x00000000      0x780
  .debug_aranges
@@ -5379,19 +5379,19 @@ LOAD linker stubs
  .debug_line    0x00004b82      0x938 ./output/timers.o
  .debug_line    0x000054ba      0x70b ./output/main.o
 
-.debug_str      0x00000000    0x1d20e
- .debug_str     0x00000000    0x1d20e ./output/IntQueue.o
+.debug_str      0x00000000    0x1d248
+ .debug_str     0x00000000    0x1d248 ./output/IntQueue.o
                                0xcf46 (size before relaxing)
- .debug_str     0x0001d20e    0x12301 ./output/IntQueueTimer.o
- .debug_str     0x0001d20e     0xc19c ./output/heap_4.o
- .debug_str     0x0001d20e     0xa9d1 ./output/list.o
- .debug_str     0x0001d20e     0x9372 ./output/port.o
- .debug_str     0x0001d20e     0x307a ./output/printf-stdarg.o
- .debug_str     0x0001d20e     0xd36b ./output/queue.o
- .debug_str     0x0001d20e     0x75e2 ./output/startup_gcc.o
- .debug_str     0x0001d20e     0xdd08 ./output/tasks.o
- .debug_str     0x0001d20e     0xd5c4 ./output/timers.o
- .debug_str     0x0001d20e    0x189cb ./output/main.o
+ .debug_str     0x0001d248    0x12301 ./output/IntQueueTimer.o
+ .debug_str     0x0001d248     0xc19c ./output/heap_4.o
+ .debug_str     0x0001d248     0xa9d1 ./output/list.o
+ .debug_str     0x0001d248     0x9372 ./output/port.o
+ .debug_str     0x0001d248     0x307a ./output/printf-stdarg.o
+ .debug_str     0x0001d248     0xd36b ./output/queue.o
+ .debug_str     0x0001d248     0x75e2 ./output/startup_gcc.o
+ .debug_str     0x0001d248     0xdd08 ./output/tasks.o
+ .debug_str     0x0001d248     0xd5c4 ./output/timers.o
+ .debug_str     0x0001d248    0x189da ./output/main.o
 
 .comment        0x00000000       0x44
  .comment       0x00000000       0x44 ./output/IntQueue.o
