@@ -77,7 +77,7 @@ xTicksToWait is set to portMAX_DELAY, this will cause our task to wait indefinit
 
 ```c
 
-static void vTemperatureNotificationHandlerTask(void *pvParameters)
+void vTemperatureNotificationHandlerTask(void *pvParameters)
 {
 	(void)pvParameters;
 
