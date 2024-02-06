@@ -44,7 +44,7 @@ static void vCommandlineTask(void *pvParameters) {
     while(1){
         int index = 0;
         while (index < NORMALBUFLEN-1) {
-            xQueueReceive(xQueueUART, &c, portMAX_DELAY);   // puts the task in Blocked state and wait for the character received from the ISR
+            xQueueReceive(xQueueUART, &c, portMAX_DELAY);   // Puts the task in Blocked state and wait for the character received from the ISR
 
             if (c == '\r') {    // Break if '\r' is entered, i.e., if enter is pressed
                 break;
@@ -231,7 +231,7 @@ array within the "startup_gcc.c" file.
 
 ```c
 #if (DEBUG_WITH_STATS==1)
-( uint32_t * ) &TIMER0_Handler, // our handler modified for statistics
+( uint32_t * ) &TIMER0_Handler, // Our handler modified for statistics
 #endif
 ```
 
