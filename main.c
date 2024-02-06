@@ -125,6 +125,8 @@ int main( void )
 	is passed in the last parameter. */
 	xTaskCreate( vTask2, "Task 2", configMINIMAL_STACK_SIZE*2, NULL, 5, &xTask2Handle );
 	/* The task handle is the last parameter _____^^^^^^^^^^^^^ */
+	
+
 
 	/* Start the scheduler so the tasks start executing. */
 	vTaskStartScheduler();

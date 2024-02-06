@@ -420,21 +420,18 @@ static void prvHeapInit( void ) /* PRIVILEGED_FUNCTION */
     xFreeBytesRemaining = pxFirstFreeBlock->xBlockSize;
 }
 /*-----------------------------------------------------------*/
-
 static void prvInsertBlockIntoFreeList( BlockLink_t * pxBlockToInsert ) /* PRIVILEGED_FUNCTION */
 {
     BlockLink_t * pxIterator;
     uint8_t * puc;
 
-    /* Iterate through the list until a block is found that has a higher address
-     * than the block being inserted. */
-    for( pxIterator = &xStart; pxIterator->pxNextFreeBlock < pxBlockToInsert; pxIterator = pxIterator->pxNextFreeBlock )
+    /* Iterate through the list until a block with a larger size is found or the end is reached */
+    for( pxIterator = &xStart; pxIterator->pxNextFreeBlock->xBlockSize <= pxBlockToInsert->xBlockSize && pxIterator->pxNextFreeBlock != pxEnd; pxIterator = pxIterator->pxNextFreeBlock )
     {
         /* Nothing to do here, just iterate to the right position. */
     }
 
-    /* Do the block being inserted, and the block it is being inserted after
-     * make a contiguous block of memory? */
+    /* Merge blocks if possible */
     puc = ( uint8_t * ) pxIterator;
 
     if( ( puc + pxIterator->xBlockSize ) == ( uint8_t * ) pxBlockToInsert )
@@ -447,8 +444,6 @@ static void prvInsertBlockIntoFreeList( BlockLink_t * pxBlockToInsert ) /* PRIVI
         mtCOVERAGE_TEST_MARKER();
     }
 
-    /* Do the block being inserted, and the block it is being inserted before
-     * make a contiguous block of memory? */
     puc = ( uint8_t * ) pxBlockToInsert;
 
     if( ( puc + pxBlockToInsert->xBlockSize ) == ( uint8_t * ) pxIterator->pxNextFreeBlock )
@@ -469,19 +464,23 @@ static void prvInsertBlockIntoFreeList( BlockLink_t * pxBlockToInsert ) /* PRIVI
         pxBlockToInsert->pxNextFreeBlock = pxIterator->pxNextFreeBlock;
     }
 
+    /* Insert the block into the correct position */
     /* If the block being inserted plugged a gab, so was merged with the block
      * before and the block after, then it's pxNextFreeBlock pointer will have
      * already been set, and should not be set here as that would make it point
      * to itself. */
     if( pxIterator != pxBlockToInsert )
     {
-        pxIterator->pxNextFreeBlock = pxBlockToInsert;
+    pxBlockToInsert->pxNextFreeBlock = pxIterator->pxNextFreeBlock;
+    pxIterator->pxNextFreeBlock = pxBlockToInsert;
     }
     else
     {
         mtCOVERAGE_TEST_MARKER();
     }
 }
+
+
 /*-----------------------------------------------------------*/
 
 void vPortGetHeapStats( HeapStats_t * pxHeapStats )
