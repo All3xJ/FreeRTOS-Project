@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "*.embeddedhtml": "html",
+        "smm_mps2.h": "c"
+    },
+    "C_Cpp.errorSquiggles": "Disabled"
+}
