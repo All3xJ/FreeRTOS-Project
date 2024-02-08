@@ -50,6 +50,9 @@ static void prvUARTInit( void );
 
 /*-----------------------------------------------------------*/
 
+
+char buffer[2048];
+
 void main( void )
 {
 	/* See https://www.freertos.org/freertos-on-qemu-mps2-an385-model.html for
@@ -58,11 +61,16 @@ void main( void )
 	/* Hardware initialisation.  printf() output uses the UART for IO. */
 	prvUARTInit();
 
-	printf("Prova\r\n");
+	xTaskCreate(vTaskFunction, "T1", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    xTaskCreate(vTaskFunction, "T2", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+  	xTaskCreate(vTaskFunction, "T3", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
 
-	xTaskCreate(vTaskFunction, "Task1", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-    xTaskCreate(vTaskFunction, "Task2", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-  	xTaskCreate(vTaskFunction, "Task3", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
+    // Ottenere e stampare la lista delle task
+    vTaskGetRunTimeStats(buffer); // 'buffer' è un array di caratteri in cui verrà memorizzata la lista
+
+	printf("vTaskGetRunTimeStats:\r\n");
+	printf(buffer);
+
   	vTaskStartScheduler();
 
 }
@@ -249,10 +257,30 @@ void *malloc( size_t size )
 
 }
 
+// void vTaskFunction(void *pvParameters) {
+//     const char *taskName = pcTaskGetName(NULL);
+//     (void)pvParameters; // Ignora l'avviso di parametro non utilizzato
+//     printf("La task %s in esecuzione!\r\n", taskName);
+//     vTaskDelay(pdMS_TO_TICKS(1000)); // Attendi 1000 millisecondi
+// 	vTaskDelete(NULL);
+// }
+
+// Funzione della task di calcolo
 void vTaskFunction(void *pvParameters) {
     const char *taskName = pcTaskGetName(NULL);
     (void)pvParameters; // Ignora l'avviso di parametro non utilizzato
-    printf("La task %s in esecuzione!\r\n", taskName);
-    vTaskDelay(pdMS_TO_TICKS(1000)); // Attendi 1000 millisecondi
+    int risultato = 0;
+
+    // Simulazione di un carico di lavoro computazionale
+    for (int i = 0; i < 10; ++i) {
+		risultato += i;
+		// Stampa dell'output
+    	printf("Task %s - Risultato: %d\r\n", taskName, risultato);
+		// vTaskDelay(pdMS_TO_TICKS(100));
+    }
+
+
+    // Blocco della task per un breve periodo di tempo
+    // vTaskDelay(pdMS_TO_TICKS(100));
 	vTaskDelete(NULL);
 }
