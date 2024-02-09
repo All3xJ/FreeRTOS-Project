@@ -5430,10 +5430,10 @@ static void prvAddCurrentTaskToDelayedList( TickType_t xTicksToWait,
 
 unsigned long ulGetRunTimeCounterValue( void )
 {
-    printf("ulGetRunTimeCounterValue\r\n");
+    // printf("ulGetRunTimeCounterValue\r\n");
     return 0;
 } 
 void vConfigureTimerForRunTimeStats( void )
 {
-    printf("vConfigureTimerForRunTimeStats\r\n");
+    // printf("vConfigureTimerForRunTimeStats\r\n");
 } 

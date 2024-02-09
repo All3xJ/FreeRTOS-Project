@@ -27,10 +27,13 @@
 /* FreeRTOS includes. */
 #include "FreeRTOS.h"
 #include "task.h"
+#include "queue.h"
+#include <SMM_MPS2.h>
 
 /* Standard includes. */
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 /* printf() output uses the UART.  These constants define the addresses of the
 required UART registers. */
@@ -40,18 +43,26 @@ required UART registers. */
 #define UART0_CTRL		( * ( ( ( volatile uint32_t * )( UART0_ADDRESS + 8UL ) ) ) )
 #define UART0_BAUDDIV	( * ( ( ( volatile uint32_t * )( UART0_ADDRESS + 16UL ) ) ) )
 #define TX_BUFFER_MASK	( 1UL )
+#define UART0_INTSTATUS	( * ( ( ( volatile uint32_t * )( UART0_ADDRESS + 12UL ) ) ) )
+
+#define NORMALBUFLEN	50					// size of a "general purpose" buffer
+
+void executeCommand( char command[] );
+static void vCommandlineTask( void *pvParameter );
+
+xQueueHandle xQueueUART;
+
+void vTaskFunctionCmd(void *pvParameters);
 
 void vFullDemoTickHookFunction( void );
+
+static void prvUARTInit( void );
+void UART0RX_Handler(void);
 
 /*
  * Printf() output is sent to the serial port.  Initialise the serial hardware.
  */
-static void prvUARTInit( void );
-
 /*-----------------------------------------------------------*/
-
-
-char buffer[2048];
 
 void main( void )
 {
@@ -61,17 +72,11 @@ void main( void )
 	/* Hardware initialisation.  printf() output uses the UART for IO. */
 	prvUARTInit();
 
-	xTaskCreate(vTaskFunction, "T1", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-    xTaskCreate(vTaskFunction, "T2", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-  	xTaskCreate(vTaskFunction, "T3", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-
-    // Ottenere e stampare la lista delle task
-    vTaskGetRunTimeStats(buffer); // 'buffer' è un array di caratteri in cui verrà memorizzata la lista
-
-	printf("vTaskGetRunTimeStats:\r\n");
-	printf(buffer);
+	xTaskCreate(vCommandlineTask, "Commandline Task", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
 
   	vTaskStartScheduler();
+
+	for( ;; );
 
 }
 /*-----------------------------------------------------------*/
@@ -168,6 +173,24 @@ volatile uint32_t ulSetToNonZeroInDebuggerToContinue = 0;
 }
 /*-----------------------------------------------------------*/
 
+static void prvUARTInit( void ) {
+	UART0_BAUDDIV = 16;
+	UART0_CTRL = 11;	// this enables receving, transmitting and also enables RX interrupt
+
+	NVIC_SetPriority(UARTRX0_IRQn,configMAX_SYSCALL_INTERRUPT_PRIORITY);	// needed because it is required by an assert in the "port.c" file in the "vPortValidateInterruptPriority" part. ISR interrupts must not have the same priority as FreeRTOS interrupts (so it is required that they are not 0 which is highest priority). so they must be numerically >= of configMAX_SYSCALL_INTERRUPT_PRIORITY (which is 5)
+	NVIC_EnableIRQ(UARTRX0_IRQn);	// with this we are enabling an ISR for UART. in the vector table of "startup_gcc.c" we have set to use "UART0RX_Handler" which is defined here in "main.c" below
+
+	xQueueUART = xQueueCreate(NORMALBUFLEN, sizeof(char));	// we create queue which is used to pass uart data received from isr to various tasks
+}
+
+void UART0RX_Handler(void) {
+	if (UART0_INTSTATUS == 2){	// if second bit is at 1 it means there was an rx interrupt
+		char c = UART0_DATA;	// we read character that was written by the user
+		xQueueSendToBackFromISR(xQueueUART, &c, NULL);
+		UART0_INTSTATUS = 2;	// we put second bit to 1 to clear the interrupt
+	}
+}
+/*-----------------------------------------------------------*/
 /* configUSE_STATIC_ALLOCATION is set to 1, so the application must provide an
 implementation of vApplicationGetIdleTaskMemory() to provide the memory that is
 used by the Idle task. */
@@ -215,13 +238,6 @@ static StackType_t uxTimerTaskStack[ configTIMER_TASK_STACK_DEPTH ];
 	Note that, as the array is necessarily of type StackType_t,
 	configMINIMAL_STACK_SIZE is specified in words, not bytes. */
 	*pulTimerTaskStackSize = configTIMER_TASK_STACK_DEPTH;
-}
-/*-----------------------------------------------------------*/
-
-static void prvUARTInit( void )
-{
-	UART0_BAUDDIV = 16;
-	UART0_CTRL = 1;
 }
 /*-----------------------------------------------------------*/
 
@@ -281,6 +297,58 @@ void vTaskFunction(void *pvParameters) {
 
 
     // Blocco della task per un breve periodo di tempo
-    // vTaskDelay(pdMS_TO_TICKS(100));
+    vTaskDelay(pdMS_TO_TICKS(1000));
 	vTaskDelete(NULL);
+}
+
+static void vCommandlineTask(void *pvParameters) {
+    (void)pvParameters; // ignore unused parameter warning
+
+    char c;
+    char inputString[NORMALBUFLEN];
+
+    while (1) {
+        int index = 0;
+
+        printf("Select the following:\n\r");
+        printf("1 - for example n1\n\r");
+        printf("2 - for example n2\n\r");
+        printf("3 - for example n3\n\r");
+        printf("0 - to exit\n\r");
+
+        while (index < NORMALBUFLEN - 1) {
+            if (xQueueReceive(xQueueUART, &c, portMAX_DELAY) == pdTRUE) {
+                printf("%c", c); // echo the character
+
+                if (c == '\r') { // abort if '\r' is entered, i.e., if enter is given
+                    break;
+                }
+
+                inputString[index] = c; // add the character to the string
+                index++;
+            }
+        }
+
+        inputString[index] = '\0'; // add string terminator
+
+        int choice = atoi(inputString); // convert string to integer
+
+        switch (choice) {
+            case 1:
+                printf("\nSelected one\n");
+                break;
+            case 2:
+                printf("\nSelected two\n");
+                break;
+            case 3:
+                printf("\nSelected three\n");
+                break;
+            case 0:
+                printf("\nExiting the cycle\n");
+                vTaskDelete(NULL); // delete the task before returning
+                break;
+            default:
+                printf("\nWrong selection\n");
+        }
+    }
 }

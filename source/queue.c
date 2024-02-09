@@ -38,6 +38,8 @@
 #include "task.h"
 #include "queue.h"
 
+#include <stdio.h>
+
 #if ( configUSE_CO_ROUTINES == 1 )
     #include "croutine.h"
 #endif
@@ -1385,7 +1387,6 @@ BaseType_t xQueueReceive( QueueHandle_t xQueue,
 
     /* Check the pointer is not NULL. */
     configASSERT( ( pxQueue ) );
-
     /* The buffer into which data is received can only be NULL if the data size
      * is zero (so no data is copied into the buffer). */
     configASSERT( !( ( ( pvBuffer ) == NULL ) && ( ( pxQueue )->uxItemSize != ( UBaseType_t ) 0U ) ) );
@@ -1396,7 +1397,6 @@ BaseType_t xQueueReceive( QueueHandle_t xQueue,
         configASSERT( !( ( xTaskGetSchedulerState() == taskSCHEDULER_SUSPENDED ) && ( xTicksToWait != 0 ) ) );
     }
     #endif
-
     /*lint -save -e904  This function relaxes the coding standard somewhat to
      * allow return statements within the function itself.  This is done in the
      * interest of execution time efficiency. */
@@ -1462,13 +1462,11 @@ BaseType_t xQueueReceive( QueueHandle_t xQueue,
             }
         }
         taskEXIT_CRITICAL();
-
         /* Interrupts and other tasks can send to and receive from the queue
          * now the critical section has been exited. */
 
         vTaskSuspendAll();
         prvLockQueue( pxQueue );
-
         /* Update the timeout state to see if it has expired yet. */
         if( xTaskCheckForTimeOut( &xTimeOut, &xTicksToWait ) == pdFALSE )
         {
@@ -1479,7 +1477,7 @@ BaseType_t xQueueReceive( QueueHandle_t xQueue,
                 traceBLOCKING_ON_QUEUE_RECEIVE( pxQueue );
                 vTaskPlaceOnEventList( &( pxQueue->xTasksWaitingToReceive ), xTicksToWait );
                 prvUnlockQueue( pxQueue );
-
+                
                 if( xTaskResumeAll() == pdFALSE )
                 {
                     portYIELD_WITHIN_API();

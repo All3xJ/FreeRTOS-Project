@@ -49,6 +49,7 @@ extern void xPortPendSVHandler( void );
 extern void xPortSysTickHandler( void );
 extern void TIMER0_Handler( void );
 extern void TIMER1_Handler( void );
+extern void UART0RX_Handler(void); 
 
 /* Exception handlers. */
 static void HardFault_Handler( void ) __attribute__( ( naked ) );
@@ -77,7 +78,7 @@ const uint32_t* isr_vector[] __attribute__((section(".isr_vector"))) =
     0, // reserved
     ( uint32_t * ) &xPortPendSVHandler, // PendSV handler    -2
     ( uint32_t * ) &xPortSysTickHandler,// SysTick_Handler   -1
-    0,
+    ( uint32_t * ) &UART0RX_Handler,    // OUR UART HANDLER ISR. WE INSERT HERE IN THE ROW RELATIVE TO UART INTERRUPTS.
     0,
     0,
     0,
