@@ -111,7 +111,7 @@ real-time operation. Setting the flag to 0 optimizes performance on the board by
 bypassing unnecessary statistical calculations. We will use the hardware 
 Timer0 to increment a counter with a frequency of 10kHz. This counter 
 will be used to track the CPU usage of each task from poweron until now.
-We've also modified FreeRTOS stats-getting code to add a Task state column to
+We've also modified FreeRTOS stats-getting code to add a "Task state" column to
 show the current task state.
 
 ![cpustats.png](./examplesImages/cpustats.png)
@@ -239,18 +239,18 @@ array within the "startup_gcc.c" file.
 
 Tickless idle mode is designed to minimize power consumption by allowing the board to enter a low-power state during idle periods. It achieves this by suppressing the SysTick interrupt for a specified duration or until an external interrupt occurs. 
 
-## Enabling Tickless Idle Mode
+### Enabling Tickless Idle Mode
 
 Tickless idle mode can be enabled by setting `configUSE_TICKLESS_IDLE` to 1 in "FreeRTOSConfig.h". This activates the built-in tickless idle functionality provided by the FreeRTOS port.
 
-When the `DEBUG_WITH_STATS` flag (used for CPU stats) is enabled, Timer0 generates continuous interrupts, preventing the system from entering Tickless Mode. Moreover, it introduces a DRIFT on SysTick counting due to the approximation of SysTick count when it's awakened by external interrupts (such as Timer0 interrupts), causing up to 1 tick errors at 10 kHz (the frequency of Timer0 interrupts). These errors can accumulate rapidly and may cause timing issues, particularly when using `vTaskDelay` (which needs to use a reliable tick count to synchronize).
+**IMPORTANT**: When the `DEBUG_WITH_STATS` flag (used for CPU stats) is enabled, Timer0 generates continuous interrupts, preventing the system from entering Tickless Mode. Moreover, it introduces a DRIFT on SysTick counting due to the approximation of SysTick count when it's awakened by external interrupts (such as Timer0 interrupts), causing up to 1 tick errors at 10 kHz (the frequency of Timer0 interrupts). These errors can accumulate rapidly and may cause timing issues, particularly when using `vTaskDelay` (which needs to use a reliable tick count to synchronize).
 
 For this reason, in "FreeRTOSConfig.h", we set `configUSE_TICKLESS_IDLE` to 1 if `DEBUG_WITH_STATS` is disabled; viceversa, if `DEBUG_WITH_STATS` is enabled, `configUSE_TICKLESS_IDLE` is set to 0.
 
-### Default Port Function: vPortSuppressTicksAndSleep
+### vPortSuppressTicksAndSleep
 To implement tickless idle mode, this FreeRTOS port provides a default function called `vPortSuppressTicksAndSleep`. This function is automatically called during idle: it manages the transition of the microcontroller into a low-power state during idle periods.
 
-### How vPortSuppressTicksAndSleep works
+This is how it works:
 1. **Calculating Idle Time**: The function calculates the duration of idle time based on the expected idle time parameter passed to it.
 2. **Stopping SysTick**: The function temporarily halts the SysTick timer to prevent periodic interrupts. It accomplishes this by setting the SysTick RELOAD register based on `xNextTaskUnblockTime`, which represents the tick count when will be resumed a task. Consequently, the SysTick will resume its operation accordingly when a task should wake up, such as after a `vTaskDelay`.
 3. **Entering Low-Power State**: The function enters a low-power state using the WFI (Wait For Interrupt) instruction, which halts the processor until an interrupt occurs or the SysTick reload completes.
@@ -259,7 +259,7 @@ To implement tickless idle mode, this FreeRTOS port provides a default function 
 
 The "Knight Rider" effect and the "Constant Blink" effect are both implemented within the `vLEDTask`. This task is suspended at the end of each cycle and is resumed inside the `executeCommand` function, using the `TaskHandle` of `vLEDTask`, when the user enters the "led" command through the UART console. We've developed a straightforward function named `printLED` that monitors the state of LEDs and draws a LED grid to illustrate which LEDs are on and off.
 
-For sleep time during animations, we use `vTaskDelay` by default. However, if `DEBUG_WITH_STATS` and `configUSE_TICKLESS_IDLE` are both enabled (`#if (DEBUG_WITH_STATS==1) && (configUSE_TICKLESS_IDLE==1)`), indicating that the user has modified the FreeRTOSConfig.h file to enable both (not recommended), we switch to using `busyWait`. This adjustment is necessary to address the potential issue of SysTick drift described earlier when discussing Tickless IDLE, ensuring accurate-timing LED animations.
+For sleep time during animations, we use `vTaskDelay` by default. However, if `DEBUG_WITH_STATS` and `configUSE_TICKLESS_IDLE` are both enabled (`#if (DEBUG_WITH_STATS==1) && (configUSE_TICKLESS_IDLE==1)`), indicating that the user has modified the FreeRTOSConfig.h file to enable both (**not recommended** as we wrote above in Tickless  IDLE paragraph), we switch to using `busyWait`. This adjustment is necessary to address the issue of SysTick drift (again, described earlier in Tickless IDLE), ensuring accurate-timing LED animations.
 
 ![ledanimations.png](./examplesImages/ledanimations.png)
 
