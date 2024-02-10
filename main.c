@@ -34,6 +34,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 
 /* printf() output uses the UART.  These constants define the addresses of the
 required UART registers. */
@@ -47,7 +48,6 @@ required UART registers. */
 
 #define NORMALBUFLEN	50					// size of a "general purpose" buffer
 
-void executeCommand( char command[] );
 static void vCommandlineTask( void *pvParameter );
 
 xQueueHandle xQueueUART;
@@ -406,7 +406,6 @@ void Task2_np(void *pvParameters) {
 	(void)pvParameters; // ignore unused parameter warning
     printf("Task2\r\n");
 	taskEXIT_CRITICAL();  // re-enabiling preemption
-	printf("%lu\r\n", CMSDK_TIMER0->VALUE);
 	vTaskDelete(NULL); // delete the task before returning
 }
 
