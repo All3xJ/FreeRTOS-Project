@@ -59,6 +59,14 @@ void vFullDemoTickHookFunction( void );
 static void prvUARTInit( void );
 void UART0RX_Handler(void);
 
+void vTaskStartMyScheduler( void );
+
+void Task1(void *pvParameters);
+void Task2(void *pvParameters);
+
+void Task1_np(void *pvParameters);
+void Task2_np(void *pvParameters);
+
 /*
  * Printf() output is sent to the serial port.  Initialise the serial hardware.
  */
@@ -311,8 +319,8 @@ static void vCommandlineTask(void *pvParameters) {
         int index = 0;
 
         printf("Select the following:\n\r");
-        printf("1 - for example n1\n\r");
-        printf("2 - for example n2\n\r");
+        printf("1 - default scheduling\n\r");
+        printf("2 - FCFS\n\r");
         printf("3 - for example n3\n\r");
         printf("0 - to exit\n\r");
 
@@ -335,10 +343,14 @@ static void vCommandlineTask(void *pvParameters) {
 
         switch (choice) {
             case 1:
-                printf("\nSelected one\n");
+				printf("Selected default\r\n");
+				xTaskCreate(Task1, "Task1", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 1, NULL);
+    			xTaskCreate(Task2, "Task2", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);        
                 break;
             case 2:
-                printf("\nSelected two\n");
+                printf("Selected FCFS\r\n");
+				xTaskCreate(Task1_np, "Task1", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 1, NULL);
+    			xTaskCreate(Task2_np, "Task2", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);   
                 break;
             case 3:
                 printf("\nSelected three\n");
@@ -350,5 +362,63 @@ static void vCommandlineTask(void *pvParameters) {
             default:
                 printf("\nWrong selection\n");
         }
+		vTaskDelay(100);
     }
 }
+
+
+/* --- List of tasks --- */
+
+void Task1(void *pvParameters) {
+	(void)pvParameters; // ignore unused parameter warning
+	for (size_t i = 0; i < 150; i++)
+	{
+		printf("%d\n", i);
+	}
+	// printf("Task1\r\n");
+	vTaskDelete(NULL); // delete the task before returning
+}
+
+// Task 2
+void Task2(void *pvParameters) {
+	(void)pvParameters; // ignore unused parameter warning
+    printf("Task2\r\n");
+	vTaskDelete(NULL); // delete the task before returning
+}
+
+/* --- List of tasks with no preemption --- */
+
+void Task1_np(void *pvParameters) {
+	taskENTER_CRITICAL(); // disabling preemption for FCFS
+	(void)pvParameters; // ignore unused parameter warning
+	for (size_t i = 0; i < 150; i++)
+	{
+		printf("%d\n", i);
+	}
+	// printf("Task1\r\n");
+	taskEXIT_CRITICAL();  // re-enabiling preemption
+	vTaskDelete(NULL); // delete the task before returning
+}
+
+// Task 2
+void Task2_np(void *pvParameters) {
+	taskENTER_CRITICAL(); // disabling preemption for FCFS
+	(void)pvParameters; // ignore unused parameter warning
+    printf("Task2\r\n");
+	taskEXIT_CRITICAL();  // re-enabiling preemption
+	printf("%lu\r\n", CMSDK_TIMER0->VALUE);
+	vTaskDelete(NULL); // delete the task before returning
+}
+
+/*
+	FCFS --> just normal order, no preemption
+	SJF --> order can be determined, no preemption
+
+	RR --> no order just preempting a time quantum
+
+	SRT --> like SJF but preemption cause task arrriving late
+
+	RM --> pereempting based on period
+
+	EDF --> gives higher priorites to deadline
+*/
