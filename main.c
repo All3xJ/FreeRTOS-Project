@@ -29,6 +29,7 @@
 #include "task.h"
 #include "queue.h"
 #include <SMM_MPS2.h>
+#include "event_groups.h"
 
 /* Standard includes. */
 #include <stdio.h>
@@ -58,6 +59,16 @@ void vFullDemoTickHookFunction( void );
 
 static void prvUARTInit( void );
 void UART0RX_Handler(void);
+
+// Define an event group handle
+EventGroupHandle_t myEventGroup; 
+
+// Define event bit masks
+#define BIT_0 (1 << 0)
+#define BIT_1 (1 << 1)
+
+void Task1(void *pvParameters);
+void Task2(void *pvParameters);
 
 /*
  * Printf() output is sent to the serial port.  Initialise the serial hardware.
@@ -336,6 +347,9 @@ static void vCommandlineTask(void *pvParameters) {
         switch (choice) {
             case 1:
                 printf("\nSelected one\n");
+				myEventGroup = xEventGroupCreate();
+				xTaskCreate(Task1, "Task1", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+    			xTaskCreate(Task2, "Task2", configMINIMAL_STACK_SIZE, NULL, 2, NULL);
                 break;
             case 2:
                 printf("\nSelected two\n");
@@ -350,5 +364,38 @@ static void vCommandlineTask(void *pvParameters) {
             default:
                 printf("\nWrong selection\n");
         }
+    }
+}
+
+void Task1(void *pvParameters) {
+	(void)pvParameters; // ignore unused parameter warning
+    while (1) {
+        // Wait for BIT_0 and BIT_1 to be set
+        EventBits_t bits = xEventGroupWaitBits(myEventGroup, BIT_0 | BIT_1, pdTRUE, pdFALSE, portMAX_DELAY);
+
+		vTaskDelay(pdMS_TO_TICKS(100));
+
+        // Check if both bits are set
+        if ((bits & (BIT_0 | BIT_1)) == (BIT_0 | BIT_1)) {
+            printf("Both bits are set\r\n");
+
+			// Clear the bits
+        	xEventGroupClearBits(myEventGroup, BIT_0 | BIT_1);
+        }
+		
+    }
+}
+
+// Task 2
+void Task2(void *pvParameters) {
+	(void)pvParameters; // ignore unused parameter warning
+    while (1) {
+        // Set BIT_0
+        xEventGroupSetBits(myEventGroup, BIT_0);
+
+        // Set BIT_1
+        xEventGroupSetBits(myEventGroup, BIT_1);
+	    
+		vTaskDelay(pdMS_TO_TICKS(100));
     }
 }
