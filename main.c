@@ -65,6 +65,7 @@ void ComputingTask(void *pvParameters);
 
 void FCFS(int l1, int l2, int l3, int l4, int l5, int l6, int l7, int l8);
 void SJF(int l1, int l2, int l3, int l4, int l5, int l6, int l7, int l8);
+int compare(const void *a, const void *b);
 
 void append(int *array, int size, int newElement);
 
@@ -337,11 +338,11 @@ static void vCommandlineTask(void *pvParameters) {
         switch (choice) {
             case 1:
 				printf("Selected FCFS\r\n");
-				FCFS(1000000, 2000000, 300000, 4000000, 5000000, 6000000, 7000000, 8000000);          
+				FCFS(1000000, 2000000, 3000000, 4000000, 5000000, 6000000, 7000000, 8000000);          
                 break;
             case 2:
                 printf("Selected SJF\r\n");
-				SJF(1000000, 2000000, 300000, 4000000, 5000000, 6000000, 7000000, 8000000);      
+				SJF(8000000, 2000000, 3000000, 4000000, 5000000, 6000000, 7000000, 1000000);      
                 break;
             case 3:
                 printf("\nSelected three\n");
@@ -382,33 +383,52 @@ void ComputingTask(void *pvParameters) {
 }
 
 void FCFS(int l1, int l2, int l3, int l4, int l5, int l6, int l7, int l8) {
-    int lengths[] = {l1, l2, l3, l4, l5, l6, l7, l8};
+    int cycles[] = {l1, l2, l3, l4, l5, l6, l7, l8};
     
-    for (unsigned int i = 0; i < sizeof(lengths) / sizeof(lengths[0]); ++i) {
+    for (unsigned int i = 0; i < sizeof(cycles) / sizeof(cycles[0]); ++i) {
         int *params = (int *)pvPortMalloc(sizeof(int));
-        *params = lengths[i];
+        *params = cycles[i];
 
         char taskName[8];
         snprintf(taskName, sizeof(taskName), "Task%d", i + 1);
 
         xTaskCreate(ComputingTask, taskName, configMINIMAL_STACK_SIZE * 10, params, tskIDLE_PRIORITY + 1, NULL);
     }
+}
+
+typedef struct {
+    int cycle;
+    char* taskName;
+} TaskInfo;
+
+int compare(const void *a, const void *b) {
+    return ((TaskInfo*)a)->cycle - ((TaskInfo*)b)->cycle;
 }
 
 void SJF(int l1, int l2, int l3, int l4, int l5, int l6, int l7, int l8) {
-    int lengths[] = {l1, l2, l3, l4, l5, l6, l7, l8};
-    
-    for (unsigned int i = 0; i < sizeof(lengths) / sizeof(lengths[0]); ++i) {
+    int cycles[] = {l1, l2, l3, l4, l5, l6, l7, l8};
+    int n = sizeof(cycles) / sizeof(cycles[0]);
+
+    TaskInfo taskInfo[n];
+    for (int i = 0; i < n; i++) {
+        taskInfo[i].cycle = cycles[i];
+        taskInfo[i].taskName = (char*)pvPortMalloc(8);
+        snprintf(taskInfo[i].taskName, 8, "Task%d", i + 1);
+    }
+
+    qsort(taskInfo, n, sizeof(taskInfo[0]), compare);
+
+    for (int i = 0; i < n; i++) {
         int *params = (int *)pvPortMalloc(sizeof(int));
-        *params = lengths[i];
+        *params = taskInfo[i].cycle;
 
-        char taskName[8];
-        snprintf(taskName, sizeof(taskName), "Task%d", i + 1);
+        xTaskCreate(ComputingTask, taskInfo[i].taskName, configMINIMAL_STACK_SIZE * 10, params, tskIDLE_PRIORITY + 1, NULL);
+    }
 
-        xTaskCreate(ComputingTask, taskName, configMINIMAL_STACK_SIZE * 10, params, tskIDLE_PRIORITY + 1, NULL);
+    for (int i = 0; i < n; i++) {
+        vPortFree(taskInfo[i].taskName);
     }
 }
-
 
 /*
 	FCFS --> just normal order, no preemption
