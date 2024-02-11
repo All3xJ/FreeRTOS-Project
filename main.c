@@ -61,18 +61,19 @@ void UART0RX_Handler(void);
 
 void vTaskStartMyScheduler( void );
 
-void Task1(void *pvParameters);
-void Task2(void *pvParameters);
-void Task3(void *pvParameters);
+void ComputingTask(void *pvParameters);
+
+void FCFS(int l1, int l2, int l3, int l4, int l5, int l6, int l7, int l8);
+void SJF(int l1, int l2, int l3, int l4, int l5, int l6, int l7, int l8);
 
 void append(int *array, int size, int newElement);
 
+int avgTime(int *array, int size);
 int avgWait(int *array, int size);
 
-TickType_t end1, end2, end3;
+#define numberOfTasks 8
 
-int finishedTasks[3];
-
+int finishedTasks[numberOfTasks];
 
 
 /*
@@ -88,7 +89,7 @@ void main( void )
 	/* Hardware initialisation.  printf() output uses the UART for IO. */
 	prvUARTInit();
 
-	for (int i = 0; i < 3; ++i) {
+	for (int i = 0; i < numberOfTasks; ++i) {
         finishedTasks[i] = -1;
     }
 
@@ -336,15 +337,11 @@ static void vCommandlineTask(void *pvParameters) {
         switch (choice) {
             case 1:
 				printf("Selected FCFS\r\n");
-				xTaskCreate(Task1, "Task1", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 1, NULL);
-    			xTaskCreate(Task2, "Task2", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 1, NULL);
-				xTaskCreate(Task3, "Task3", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 1, NULL);           
+				FCFS(1000000, 2000000, 300000, 4000000, 5000000, 6000000, 7000000, 8000000);          
                 break;
             case 2:
                 printf("Selected SJF\r\n");
-				xTaskCreate(Task2, "Task2", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 1, NULL);
-    			xTaskCreate(Task3, "Task3", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 1, NULL);
-				xTaskCreate(Task1, "Task1", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 1, NULL);      
+				SJF(1000000, 2000000, 300000, 4000000, 5000000, 6000000, 7000000, 8000000);      
                 break;
             case 3:
                 printf("\nSelected three\n");
@@ -357,10 +354,10 @@ static void vCommandlineTask(void *pvParameters) {
                 printf("\nWrong selection\n");
         }
 		vTaskDelay(1000);
-		printf("avg time: %u\r\n", (end1+end2+end3)/3);
-		printf("avg wait: %u\r\n", avgWait(finishedTasks, 3));
+		printf("avg time: %u\r\n", avgTime(finishedTasks, numberOfTasks));
+		printf("avg wait: %u\r\n", avgWait(finishedTasks, numberOfTasks));
 		printf("\r\n");
-		for (int i = 0; i < 3; ++i) {
+		for (int i = 0; i < numberOfTasks; ++i) {
 			finishedTasks[i] = -1;
 		}
     }
@@ -368,46 +365,51 @@ static void vCommandlineTask(void *pvParameters) {
 
 /* --- List of tasks --- */
 
-void Task1(void *pvParameters) {
-	TickType_t start = xTaskGetTickCount();
-	(void)pvParameters; // ignore unused parameter warning
-	int res = 1;
-	for (int i = 1; i < 40000000; ++i) {
-		res *= i;
+void ComputingTask(void *pvParameters) {
+    TickType_t start = xTaskGetTickCount();
+    int n = *((int*)pvParameters);
+	const char *taskName = pcTaskGetName(NULL);
+    int res = 1;
+
+    for (int i = 1; i <= n; ++i) {
+        res *= i;
     }
-	end1 = xTaskGetTickCount()-start;
-	printf("Task1: %u\r\n", end1);
-	append(finishedTasks, 3, end1);
-	vTaskDelete(NULL); // delete the task before returning
+
+    TickType_t end = xTaskGetTickCount() - start;
+    printf("%s elapsed time: %u\r\n", taskName, end);
+    append(finishedTasks, numberOfTasks, end);
+    vTaskDelete(NULL); // delete the task before returning
 }
 
-// Task 2
-void Task2(void *pvParameters) {
-	TickType_t start = xTaskGetTickCount();
-	(void)pvParameters; // ignore unused parameter warning
-	int res = 1;
-	for (int i = 1; i < 10000000; ++i) {
-		res *= i;
+void FCFS(int l1, int l2, int l3, int l4, int l5, int l6, int l7, int l8) {
+    int lengths[] = {l1, l2, l3, l4, l5, l6, l7, l8};
+    
+    for (unsigned int i = 0; i < sizeof(lengths) / sizeof(lengths[0]); ++i) {
+        int *params = (int *)pvPortMalloc(sizeof(int));
+        *params = lengths[i];
+
+        char taskName[8];
+        snprintf(taskName, sizeof(taskName), "Task%d", i + 1);
+
+        xTaskCreate(ComputingTask, taskName, configMINIMAL_STACK_SIZE * 10, params, tskIDLE_PRIORITY + 1, NULL);
     }
-	end2 = xTaskGetTickCount()-start;
-	printf("Task2: %u\r\n", end2);
-	append(finishedTasks, 3, end2);
-	vTaskDelete(NULL); // delete the task before returning
 }
 
-// Task 3
-void Task3(void *pvParameters) {
-	TickType_t start = xTaskGetTickCount();
-	(void)pvParameters; // ignore unused parameter warning
-	int res = 1;
-	for (int i = 1; i < 20000000; ++i) {
-		res *= i;
+void SJF(int l1, int l2, int l3, int l4, int l5, int l6, int l7, int l8) {
+    int lengths[] = {l1, l2, l3, l4, l5, l6, l7, l8};
+    
+    for (unsigned int i = 0; i < sizeof(lengths) / sizeof(lengths[0]); ++i) {
+        int *params = (int *)pvPortMalloc(sizeof(int));
+        *params = lengths[i];
+
+        char taskName[8];
+        snprintf(taskName, sizeof(taskName), "Task%d", i + 1);
+
+        xTaskCreate(ComputingTask, taskName, configMINIMAL_STACK_SIZE * 10, params, tskIDLE_PRIORITY + 1, NULL);
     }
-	end3 = xTaskGetTickCount()-start;
-	printf("Task3: %u\r\n", end3);
-	append(finishedTasks, 3, end3);
-	vTaskDelete(NULL); // delete the task before returning
 }
+
+
 /*
 	FCFS --> just normal order, no preemption
 	SJF --> order can be determined, no preemption
@@ -430,10 +432,18 @@ void append(int *array, int size, int newElement) {
     }
 }
 
+int avgTime(int *array, int size) {
+	int res = 0;
+    for (int i = 0; i < size; ++i) {
+		res += array[i];
+    }
+	return res/size;
+}
+
 int avgWait(int *array, int size) {
 	int res = 0;
     for (int i = 0; i < size-1; ++i) {
 		res += array[i];
     }
-	return res/size-1;
+	return res/size;
 }
