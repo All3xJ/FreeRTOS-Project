@@ -5427,13 +5427,3 @@ static void prvAddCurrentTaskToDelayedList( TickType_t xTicksToWait,
     #endif
 
 #endif /* if ( configINCLUDE_FREERTOS_TASK_C_ADDITIONS_H == 1 ) */
-
-unsigned long ulGetRunTimeCounterValue( void )
-{
-    // printf("ulGetRunTimeCounterValue\r\n");
-    return 0;
-} 
-void vConfigureTimerForRunTimeStats( void )
-{
-    // printf("vConfigureTimerForRunTimeStats\r\n");
-} 

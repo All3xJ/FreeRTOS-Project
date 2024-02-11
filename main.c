@@ -34,7 +34,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <time.h>
 
 /* printf() output uses the UART.  These constants define the addresses of the
 required UART registers. */
@@ -48,6 +47,7 @@ required UART registers. */
 
 #define NORMALBUFLEN	50					// size of a "general purpose" buffer
 
+void executeCommand( char command[] );
 static void vCommandlineTask( void *pvParameter );
 
 xQueueHandle xQueueUART;
@@ -63,9 +63,17 @@ void vTaskStartMyScheduler( void );
 
 void Task1(void *pvParameters);
 void Task2(void *pvParameters);
+void Task3(void *pvParameters);
 
-void Task1_np(void *pvParameters);
-void Task2_np(void *pvParameters);
+void append(int *array, int size, int newElement);
+
+int avgWait(int *array, int size);
+
+TickType_t end1, end2, end3;
+
+int finishedTasks[3];
+
+
 
 /*
  * Printf() output is sent to the serial port.  Initialise the serial hardware.
@@ -80,7 +88,11 @@ void main( void )
 	/* Hardware initialisation.  printf() output uses the UART for IO. */
 	prvUARTInit();
 
-	xTaskCreate(vCommandlineTask, "Commandline Task", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+	for (int i = 0; i < 3; ++i) {
+        finishedTasks[i] = -1;
+    }
+
+	xTaskCreate(vCommandlineTask, "Commandline Task", configMINIMAL_STACK_SIZE * 5, NULL, tskIDLE_PRIORITY + 2, NULL);
 
   	vTaskStartScheduler();
 
@@ -289,26 +301,6 @@ void *malloc( size_t size )
 // 	vTaskDelete(NULL);
 // }
 
-// Funzione della task di calcolo
-void vTaskFunction(void *pvParameters) {
-    const char *taskName = pcTaskGetName(NULL);
-    (void)pvParameters; // Ignora l'avviso di parametro non utilizzato
-    int risultato = 0;
-
-    // Simulazione di un carico di lavoro computazionale
-    for (int i = 0; i < 10; ++i) {
-		risultato += i;
-		// Stampa dell'output
-    	printf("Task %s - Risultato: %d\r\n", taskName, risultato);
-		// vTaskDelay(pdMS_TO_TICKS(100));
-    }
-
-
-    // Blocco della task per un breve periodo di tempo
-    vTaskDelay(pdMS_TO_TICKS(1000));
-	vTaskDelete(NULL);
-}
-
 static void vCommandlineTask(void *pvParameters) {
     (void)pvParameters; // ignore unused parameter warning
 
@@ -319,8 +311,8 @@ static void vCommandlineTask(void *pvParameters) {
         int index = 0;
 
         printf("Select the following:\n\r");
-        printf("1 - default scheduling\n\r");
-        printf("2 - FCFS\n\r");
+        printf("1 - FCFS\n\r");
+        printf("2 - SJF\n\r");
         printf("3 - for example n3\n\r");
         printf("0 - to exit\n\r");
 
@@ -343,14 +335,16 @@ static void vCommandlineTask(void *pvParameters) {
 
         switch (choice) {
             case 1:
-				printf("Selected default\r\n");
+				printf("Selected FCFS\r\n");
 				xTaskCreate(Task1, "Task1", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 1, NULL);
-    			xTaskCreate(Task2, "Task2", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);        
+    			xTaskCreate(Task2, "Task2", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 1, NULL);
+				xTaskCreate(Task3, "Task3", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 1, NULL);           
                 break;
             case 2:
-                printf("Selected FCFS\r\n");
-				xTaskCreate(Task1_np, "Task1", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 1, NULL);
-    			xTaskCreate(Task2_np, "Task2", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);   
+                printf("Selected SJF\r\n");
+				xTaskCreate(Task2, "Task2", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 1, NULL);
+    			xTaskCreate(Task3, "Task3", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 1, NULL);
+				xTaskCreate(Task1, "Task1", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 1, NULL);      
                 break;
             case 3:
                 printf("\nSelected three\n");
@@ -362,53 +356,58 @@ static void vCommandlineTask(void *pvParameters) {
             default:
                 printf("\nWrong selection\n");
         }
-		vTaskDelay(100);
+		vTaskDelay(1000);
+		printf("avg time: %u\r\n", (end1+end2+end3)/3);
+		printf("avg wait: %u\r\n", avgWait(finishedTasks, 3));
+		printf("\r\n");
+		for (int i = 0; i < 3; ++i) {
+			finishedTasks[i] = -1;
+		}
     }
 }
-
 
 /* --- List of tasks --- */
 
 void Task1(void *pvParameters) {
+	TickType_t start = xTaskGetTickCount();
 	(void)pvParameters; // ignore unused parameter warning
-	for (size_t i = 0; i < 150; i++)
-	{
-		printf("%d\n", i);
-	}
-	// printf("Task1\r\n");
+	int res = 1;
+	for (int i = 1; i < 40000000; ++i) {
+		res *= i;
+    }
+	end1 = xTaskGetTickCount()-start;
+	printf("Task1: %u\r\n", end1);
+	append(finishedTasks, 3, end1);
 	vTaskDelete(NULL); // delete the task before returning
 }
 
 // Task 2
 void Task2(void *pvParameters) {
+	TickType_t start = xTaskGetTickCount();
 	(void)pvParameters; // ignore unused parameter warning
-    printf("Task2\r\n");
+	int res = 1;
+	for (int i = 1; i < 10000000; ++i) {
+		res *= i;
+    }
+	end2 = xTaskGetTickCount()-start;
+	printf("Task2: %u\r\n", end2);
+	append(finishedTasks, 3, end2);
 	vTaskDelete(NULL); // delete the task before returning
 }
 
-/* --- List of tasks with no preemption --- */
-
-void Task1_np(void *pvParameters) {
-	taskENTER_CRITICAL(); // disabling preemption for FCFS
+// Task 3
+void Task3(void *pvParameters) {
+	TickType_t start = xTaskGetTickCount();
 	(void)pvParameters; // ignore unused parameter warning
-	for (size_t i = 0; i < 150; i++)
-	{
-		printf("%d\n", i);
-	}
-	// printf("Task1\r\n");
-	taskEXIT_CRITICAL();  // re-enabiling preemption
+	int res = 1;
+	for (int i = 1; i < 20000000; ++i) {
+		res *= i;
+    }
+	end3 = xTaskGetTickCount()-start;
+	printf("Task3: %u\r\n", end3);
+	append(finishedTasks, 3, end3);
 	vTaskDelete(NULL); // delete the task before returning
 }
-
-// Task 2
-void Task2_np(void *pvParameters) {
-	taskENTER_CRITICAL(); // disabling preemption for FCFS
-	(void)pvParameters; // ignore unused parameter warning
-    printf("Task2\r\n");
-	taskEXIT_CRITICAL();  // re-enabiling preemption
-	vTaskDelete(NULL); // delete the task before returning
-}
-
 /*
 	FCFS --> just normal order, no preemption
 	SJF --> order can be determined, no preemption
@@ -421,3 +420,20 @@ void Task2_np(void *pvParameters) {
 
 	EDF --> gives higher priorites to deadline
 */
+
+void append(int *array, int size, int newElement) {
+    for (int i = 0; i < size; ++i) {
+        if (array[i] == -1) {
+            array[i] = newElement;
+            return;
+        }
+    }
+}
+
+int avgWait(int *array, int size) {
+	int res = 0;
+    for (int i = 0; i < size-1; ++i) {
+		res += array[i];
+    }
+	return res/size-1;
+}

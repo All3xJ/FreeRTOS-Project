@@ -51,7 +51,7 @@ unsigned long ulGetRunTimeCounterValue( void ); /* Prototype of function that re
 void vConfigureTimerForRunTimeStats( void );    /* Prototype of function that initialises the run time counter. */
 
 #define configUSE_TICKLESS_IDLE         0
-#define configUSE_PREEMPTION			1
+#define configUSE_PREEMPTION			0
 #define configUSE_IDLE_HOOK				0
 #define configUSE_TICK_HOOK				1
 #define configCPU_CLOCK_HZ				( ( unsigned long ) 25000000 )
@@ -98,7 +98,7 @@ to exclude the API function. */
 #define INCLUDE_xSemaphoreGetMutexHolder		1
 #define INCLUDE_eTaskGetState					1
 #define INCLUDE_xTimerPendFunctionCall			1
-#define INCLUDE_xTaskAbortDelay					1
+#define INCLUDE_xTaskAbortDelay					0
 #define INCLUDE_xTaskGetHandle					1
 
 /* This demo makes use of one or more example stats formatting functions.  These

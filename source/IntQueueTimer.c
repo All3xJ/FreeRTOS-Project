@@ -40,6 +40,15 @@
 
 volatile uint32_t ulNest, ulNestCount;
 
+unsigned long ulGetRunTimeCounterValue( void )
+{
+    return ulNestCount; // returns the reached counter value
+} 
+void vConfigureTimerForRunTimeStats( void )
+{
+    ulNestCount = 0; // initializes the counter to 0
+} 
+
 /*-----------------------------------------------------------*/
 
 void TIMER0_Handler( void )
