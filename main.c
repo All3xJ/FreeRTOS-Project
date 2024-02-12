@@ -77,7 +77,7 @@ void generateTasksParams(int* array, int size);
 
 unsigned int seed = 0;
 
-#define numberOfTasks 9
+#define numberOfTasks 9 // Change this value to change the numbers of tasks to run
 
 int finishedTasks[numberOfTasks];
 
@@ -318,7 +318,6 @@ static void vCommandlineTask(void *pvParameters) {
 		printf("9 - Generate or regenerate the tasks\n\r");
         printf("1 - FCFS\n\r");
         printf("2 - SJF\n\r");
-        printf("3 - for example n3\n\r");
         printf("0 - to exit\n\r");
 
         while (index < NORMALBUFLEN - 1) {
@@ -363,9 +362,6 @@ static void vCommandlineTask(void *pvParameters) {
                 printf("Selected SJF\r\n");
 				// generateTasksParams(tasksParams, numberOfTasks);
 				SJF(tasksParams, numberOfTasks);    
-                break;
-            case 3:
-                printf("\nSelected three\n");
                 break;
             case 0:
                 printf("\nExiting the cycle\n");
@@ -480,7 +476,7 @@ int avgTime(int *array, int size) {
 int avgWait(int *array, int size) {
 	int res = 0;
     for (int i = 0; i < size-1; ++i) {
-		res += array[i];
+		res += array[i] * (size-i-1);
     }
 	return res/size;
 }
