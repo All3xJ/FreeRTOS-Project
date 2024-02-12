@@ -61,18 +61,6 @@ void UART0RX_Handler(void);
 // Task just do some arithmetics calculation, the longer the number passed, the more complex the computation
 void ComputingTask(void *pvParameters);
 
-// First- Come, First-Served
-void FCFS(int cycles[], int numTasks);
-// Shortest Job First
-void SJF(int cycles[], int numTasks);
-// Longest Job First
-void LJF(int cycles[], int numTasks);
-
-// Comparison used by SJF
-int compareSJF(const void *a, const void *b);
-// Comparison used by LJF
-int compareLJF(const void *a, const void *b);
-
 // Function used to append values to an array (last element defined by -1)
 void append(int *array, int size, int newElement);
 
@@ -334,9 +322,9 @@ static void vCommandlineTask(void *pvParameters) {
 
         printf("Select the following:\n\r");
 		printf("9 - Generate or regenerate the tasks\n\r");
-        printf("1 - FCFS\n\r");
-        printf("2 - SJF\n\r");
-		printf("2 - LJF\n\r");
+        printf("1 - Option 1\n\r");
+        printf("2 - Option 2\n\r");
+		printf("2 - Option 3\n\r");
         printf("0 - to exit\n\r");
 
         while (index < NORMALBUFLEN - 1) {
@@ -368,8 +356,8 @@ static void vCommandlineTask(void *pvParameters) {
 					printf("\r\n");
 					break;
 				}
-				printf("Selected FCFS\r\n");
-				FCFS(tasksParams, numberOfTasks);
+				// printf("Selected FCFS\r\n");
+				// FCFS(tasksParams, numberOfTasks);
                 break;
             case 2:
 				if (tasksParams[0] == -1) {
@@ -377,8 +365,8 @@ static void vCommandlineTask(void *pvParameters) {
 					printf("\r\n");
 					break;
 				}
-                printf("Selected SJF\r\n");
-				SJF(tasksParams, numberOfTasks);    
+                // printf("Selected SJF\r\n");
+				// SJF(tasksParams, numberOfTasks);    
                 break;
 			case 3:
 				if (tasksParams[0] == -1) {
@@ -386,8 +374,8 @@ static void vCommandlineTask(void *pvParameters) {
 					printf("\r\n");
 					break;
 				}
-                printf("Selected LJF\r\n");
-				LJF(tasksParams, numberOfTasks);    
+                // printf("Selected LJF\r\n");
+				// LJF(tasksParams, numberOfTasks);    
                 break;
             case 0:
                 printf("\nExiting the cycle\n");
@@ -398,9 +386,9 @@ static void vCommandlineTask(void *pvParameters) {
         }
 		vTaskDelay(1000);
 		if (finishedTasks[0] != -1) {
-			printf("avg time: %u\r\n", avgTime(finishedTasks, numberOfTasks));
-			printf("avg wait: %u\r\n", avgWait(finishedTasks, numberOfTasks));
-			printf("avg turn-around time: %u\r\n", avgTurnaroundTime(finishedTasks, numberOfTasks));
+			// printf("avg time: %u\r\n", avgTime(finishedTasks, numberOfTasks));
+			// printf("avg wait: %u\r\n", avgWait(finishedTasks, numberOfTasks));
+			// printf("avg turn-around time: %u\r\n", avgTurnaroundTime(finishedTasks, numberOfTasks));
 			printf("\r\n");
 			// Restoring the finishedTasks array to -1 for a further execution
 			for (int i = 0; i < numberOfTasks; ++i) {
@@ -426,75 +414,6 @@ void ComputingTask(void *pvParameters) {
     printf("%s elapsed time: %u\r\n", taskName, end);
     append(finishedTasks, numberOfTasks, end);
     vTaskDelete(NULL); // delete the task before returning
-}
-
-void FCFS(int cycles[], int numTasks) {
-    for (int i = 0; i < numTasks; ++i) {
-        int *params = (int *)pvPortMalloc(sizeof(int));
-        *params = cycles[i];
-
-        char taskName[8];
-        snprintf(taskName, sizeof(taskName), "Task%d", i + 1);
-
-        xTaskCreate(ComputingTask, taskName, configMINIMAL_STACK_SIZE * 10, params, tskIDLE_PRIORITY + 1, NULL);
-    }
-}
-
-typedef struct {
-    int cycle;
-    char* taskName;
-} TaskInfo;
-
-int compareSJF(const void *a, const void *b) {
-    return ((TaskInfo*)a)->cycle - ((TaskInfo*)b)->cycle;
-}
-
-void SJF(int cycles[], int numTasks) {
-    TaskInfo taskInfo[numTasks];
-    for (int i = 0; i < numTasks; i++) {
-        taskInfo[i].cycle = cycles[i];
-        taskInfo[i].taskName = (char*)pvPortMalloc(8);
-        snprintf(taskInfo[i].taskName, 8, "Task%d", i + 1);
-    }
-
-    qsort(taskInfo, numTasks, sizeof(taskInfo[0]), compareSJF);
-
-    for (int i = 0; i < numTasks; i++) {
-        int *params = (int *)pvPortMalloc(sizeof(int));
-        *params = taskInfo[i].cycle;
-
-        xTaskCreate(ComputingTask, taskInfo[i].taskName, configMINIMAL_STACK_SIZE * 10, params, tskIDLE_PRIORITY + 1, NULL);
-    }
-
-    for (int i = 0; i < numTasks; i++) {
-        vPortFree(taskInfo[i].taskName);
-    }
-}
-
-int compareLJF(const void *a, const void *b) {
-    return ((TaskInfo*)b)->cycle - ((TaskInfo*)a)->cycle;
-}
-
-void LJF(int cycles[], int numTasks) {
-    TaskInfo taskInfo[numTasks];
-    for (int i = 0; i < numTasks; i++) {
-        taskInfo[i].cycle = cycles[i];
-        taskInfo[i].taskName = (char*)pvPortMalloc(8);
-        snprintf(taskInfo[i].taskName, 8, "Task%d", i + 1);
-    }
-
-    qsort(taskInfo, numTasks, sizeof(taskInfo[0]), compareLJF);
-
-    for (int i = 0; i < numTasks; i++) {
-        int *params = (int *)pvPortMalloc(sizeof(int));
-        *params = taskInfo[i].cycle;
-
-        xTaskCreate(ComputingTask, taskInfo[i].taskName, configMINIMAL_STACK_SIZE * 10, params, tskIDLE_PRIORITY + 1, NULL);
-    }
-
-    for (int i = 0; i < numTasks; i++) {
-        vPortFree(taskInfo[i].taskName);
-    }
 }
 
 void append(int *array, int size, int newElement) {
