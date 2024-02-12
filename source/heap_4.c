@@ -135,62 +135,48 @@ PRIVILEGED_DATA static size_t xNumberOfSuccessfulFrees = 0;
 
 /*-----------------------------------------------------------*/
 
-void *pvPortMalloc(size_t xWantedSize)
-{
+void *pvPortMalloc(size_t xWantedSize) {
     BlockLink_t *pxBlock;
     BlockLink_t *pxPreviousBlock;
-    BlockLink_t *pxLargestBlock = NULL;
+    BlockLink_t *pxLargestBlock = NULL;  
     size_t xAdditionalRequiredSize;
     void *pvReturn = NULL;
 
     vTaskSuspendAll();
     {
-        if (pxEnd == NULL)
-        {
+        if (pxEnd == NULL) {
             prvHeapInit();
         }
 
-        if (xWantedSize > 0)
-        {
+        if (xWantedSize > 0) {
             xAdditionalRequiredSize = xHeapStructSize + portBYTE_ALIGNMENT - (xWantedSize & portBYTE_ALIGNMENT_MASK);
-            if (heapADD_WILL_OVERFLOW(xWantedSize, xAdditionalRequiredSize) == 0)
-            {
+            if (heapADD_WILL_OVERFLOW(xWantedSize, xAdditionalRequiredSize) == 0) {
                 xWantedSize += xAdditionalRequiredSize;
-            }
-            else
-            {
+            } else {
                 xWantedSize = 0;
             }
-        }
-         else
-        {
+        } else {
             mtCOVERAGE_TEST_MARKER();
         }
 
-        if (heapBLOCK_SIZE_IS_VALID(xWantedSize) != 0)
-        {
+        if (heapBLOCK_SIZE_IS_VALID(xWantedSize) != 0) {
             pxPreviousBlock = &xStart;
             pxBlock = xStart.pxNextFreeBlock;
 
-            while (pxBlock != pxEnd)
-            {
-                if (heapBLOCK_IS_ALLOCATED(pxBlock) == 0 && pxBlock->xBlockSize >= xWantedSize)
-                {
-                    if (pxLargestBlock == NULL || pxBlock->xBlockSize > pxLargestBlock->xBlockSize)
-                    {
-                        pxLargestBlock = pxBlock;
+            while (pxBlock != pxEnd) {
+                if (heapBLOCK_IS_ALLOCATED(pxBlock) == 0 && pxBlock->xBlockSize >= xWantedSize) {
+                    if (pxLargestBlock == NULL || pxBlock->xBlockSize > pxLargestBlock->xBlockSize) { 
+                        pxLargestBlock = pxBlock;  
                     }
                 }
                 pxPreviousBlock = pxBlock;
                 pxBlock = pxBlock->pxNextFreeBlock;
             }
 
-            if (pxLargestBlock != NULL)
-            {
+            if (pxLargestBlock != NULL) { 
                 pvReturn = (void *)(((uint8_t *)pxLargestBlock) + xHeapStructSize);
                 pxPreviousBlock->pxNextFreeBlock = pxLargestBlock->pxNextFreeBlock;
-                if ((pxLargestBlock->xBlockSize - xWantedSize) > heapMINIMUM_BLOCK_SIZE)
-                {
+                if ((pxLargestBlock->xBlockSize - xWantedSize) > heapMINIMUM_BLOCK_SIZE) {
                     BlockLink_t *pxNewBlockLink = (void *)(((uint8_t *)pxLargestBlock) + xWantedSize);
                     pxNewBlockLink->xBlockSize = pxLargestBlock->xBlockSize - xWantedSize;
                     pxLargestBlock->xBlockSize = xWantedSize;
@@ -205,8 +191,19 @@ void *pvPortMalloc(size_t xWantedSize)
     }
     (void)xTaskResumeAll();
 
+#if ( configUSE_MALLOC_FAILED_HOOK == 1 )
+    if( pvReturn == NULL ) {
+        vApplicationMallocFailedHook();
+    } else {
+        mtCOVERAGE_TEST_MARKER();
+    }
+#endif /* if ( configUSE_MALLOC_FAILED_HOOK == 1 ) */
+
+    configASSERT(((size_t)pvReturn & (size_t)portBYTE_ALIGNMENT_MASK) == 0);
+
     return pvReturn;
 }
+
 /*-----------------------------------------------------------*/
 
 void vPortFree( void * pv )
