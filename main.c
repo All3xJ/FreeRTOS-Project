@@ -65,7 +65,9 @@ void ComputingTask(void *pvParameters);
 
 void FCFS(int cycles[], int numTasks);
 void SJF(int cycles[], int numTasks);
-int compare(const void *a, const void *b);
+void LJF(int cycles[], int numTasks);
+int compareSJF(const void *a, const void *b);
+int compareLJF(const void *a, const void *b);
 
 void append(int *array, int size, int newElement);
 
@@ -318,6 +320,7 @@ static void vCommandlineTask(void *pvParameters) {
 		printf("9 - Generate or regenerate the tasks\n\r");
         printf("1 - FCFS\n\r");
         printf("2 - SJF\n\r");
+		printf("2 - LJF\n\r");
         printf("0 - to exit\n\r");
 
         while (index < NORMALBUFLEN - 1) {
@@ -350,7 +353,6 @@ static void vCommandlineTask(void *pvParameters) {
 					break;
 				}
 				printf("Selected FCFS\r\n");
-				// generateTasksParams(tasksParams, numberOfTasks);
 				FCFS(tasksParams, numberOfTasks);
                 break;
             case 2:
@@ -360,8 +362,16 @@ static void vCommandlineTask(void *pvParameters) {
 					break;
 				}
                 printf("Selected SJF\r\n");
-				// generateTasksParams(tasksParams, numberOfTasks);
 				SJF(tasksParams, numberOfTasks);    
+                break;
+			case 3:
+				if (tasksParams[0] == -1) {
+					printf("First of all generate some tasks with options 9\r\n");
+					printf("\r\n");
+					break;
+				}
+                printf("Selected LJF\r\n");
+				LJF(tasksParams, numberOfTasks);    
                 break;
             case 0:
                 printf("\nExiting the cycle\n");
@@ -417,7 +427,7 @@ typedef struct {
     char* taskName;
 } TaskInfo;
 
-int compare(const void *a, const void *b) {
+int compareSJF(const void *a, const void *b) {
     return ((TaskInfo*)a)->cycle - ((TaskInfo*)b)->cycle;
 }
 
@@ -429,7 +439,33 @@ void SJF(int cycles[], int numTasks) {
         snprintf(taskInfo[i].taskName, 8, "Task%d", i + 1);
     }
 
-    qsort(taskInfo, numTasks, sizeof(taskInfo[0]), compare);
+    qsort(taskInfo, numTasks, sizeof(taskInfo[0]), compareSJF);
+
+    for (int i = 0; i < numTasks; i++) {
+        int *params = (int *)pvPortMalloc(sizeof(int));
+        *params = taskInfo[i].cycle;
+
+        xTaskCreate(ComputingTask, taskInfo[i].taskName, configMINIMAL_STACK_SIZE * 10, params, tskIDLE_PRIORITY + 1, NULL);
+    }
+
+    for (int i = 0; i < numTasks; i++) {
+        vPortFree(taskInfo[i].taskName);
+    }
+}
+
+int compareLJF(const void *a, const void *b) {
+    return ((TaskInfo*)b)->cycle - ((TaskInfo*)a)->cycle;
+}
+
+void LJF(int cycles[], int numTasks) {
+    TaskInfo taskInfo[numTasks];
+    for (int i = 0; i < numTasks; i++) {
+        taskInfo[i].cycle = cycles[i];
+        taskInfo[i].taskName = (char*)pvPortMalloc(8);
+        snprintf(taskInfo[i].taskName, 8, "Task%d", i + 1);
+    }
+
+    qsort(taskInfo, numTasks, sizeof(taskInfo[0]), compareLJF);
 
     for (int i = 0; i < numTasks; i++) {
         int *params = (int *)pvPortMalloc(sizeof(int));
