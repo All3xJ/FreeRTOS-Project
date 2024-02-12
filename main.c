@@ -63,8 +63,8 @@ void vTaskStartMyScheduler( void );
 
 void ComputingTask(void *pvParameters);
 
-void FCFS(int l1, int l2, int l3, int l4, int l5, int l6, int l7, int l8);
-void SJF(int l1, int l2, int l3, int l4, int l5, int l6, int l7, int l8);
+void FCFS(int cycles[], int numTasks);
+void SJF(int cycles[], int numTasks);
 int compare(const void *a, const void *b);
 
 void append(int *array, int size, int newElement);
@@ -72,10 +72,16 @@ void append(int *array, int size, int newElement);
 int avgTime(int *array, int size);
 int avgWait(int *array, int size);
 
-#define numberOfTasks 8
+int randomCycle(int min, int max);
+void generateTasksParams(int* array, int size);
+
+unsigned int seed = 0;
+
+#define numberOfTasks 9
 
 int finishedTasks[numberOfTasks];
 
+int tasksParams[numberOfTasks];
 
 /*
  * Printf() output is sent to the serial port.  Initialise the serial hardware.
@@ -92,6 +98,10 @@ void main( void )
 
 	for (int i = 0; i < numberOfTasks; ++i) {
         finishedTasks[i] = -1;
+    }
+
+	for (int i = 0; i < numberOfTasks; ++i) {
+        tasksParams[i] = -1;
     }
 
 	xTaskCreate(vCommandlineTask, "Commandline Task", configMINIMAL_STACK_SIZE * 5, NULL, tskIDLE_PRIORITY + 2, NULL);
@@ -295,14 +305,6 @@ void *malloc( size_t size )
 
 }
 
-// void vTaskFunction(void *pvParameters) {
-//     const char *taskName = pcTaskGetName(NULL);
-//     (void)pvParameters; // Ignora l'avviso di parametro non utilizzato
-//     printf("La task %s in esecuzione!\r\n", taskName);
-//     vTaskDelay(pdMS_TO_TICKS(1000)); // Attendi 1000 millisecondi
-// 	vTaskDelete(NULL);
-// }
-
 static void vCommandlineTask(void *pvParameters) {
     (void)pvParameters; // ignore unused parameter warning
 
@@ -313,6 +315,7 @@ static void vCommandlineTask(void *pvParameters) {
         int index = 0;
 
         printf("Select the following:\n\r");
+		printf("9 - Generate or regenerate the tasks\n\r");
         printf("1 - FCFS\n\r");
         printf("2 - SJF\n\r");
         printf("3 - for example n3\n\r");
@@ -336,13 +339,30 @@ static void vCommandlineTask(void *pvParameters) {
         int choice = atoi(inputString); // convert string to integer
 
         switch (choice) {
+			case 9:
+				generateTasksParams(tasksParams, numberOfTasks);
+				printf("Tasks generated\r\n");
+				printf("\r\n");
+				break;
             case 1:
+				if (tasksParams[0] == -1) {
+					printf("First of all generate some tasks with options 9\r\n");
+					printf("\r\n");
+					break;
+				}
 				printf("Selected FCFS\r\n");
-				FCFS(1000000, 2000000, 3000000, 4000000, 5000000, 6000000, 7000000, 8000000);          
+				// generateTasksParams(tasksParams, numberOfTasks);
+				FCFS(tasksParams, numberOfTasks);
                 break;
             case 2:
+				if (tasksParams[0] == -1) {
+					printf("First of all generate some tasks with options 9\r\n");
+					printf("\r\n");
+					break;
+				}
                 printf("Selected SJF\r\n");
-				SJF(8000000, 2000000, 3000000, 4000000, 5000000, 6000000, 7000000, 1000000);      
+				// generateTasksParams(tasksParams, numberOfTasks);
+				SJF(tasksParams, numberOfTasks);    
                 break;
             case 3:
                 printf("\nSelected three\n");
@@ -355,11 +375,13 @@ static void vCommandlineTask(void *pvParameters) {
                 printf("\nWrong selection\n");
         }
 		vTaskDelay(1000);
-		printf("avg time: %u\r\n", avgTime(finishedTasks, numberOfTasks));
-		printf("avg wait: %u\r\n", avgWait(finishedTasks, numberOfTasks));
-		printf("\r\n");
-		for (int i = 0; i < numberOfTasks; ++i) {
-			finishedTasks[i] = -1;
+		if (finishedTasks[0] != -1) {
+			printf("avg time: %u\r\n", avgTime(finishedTasks, numberOfTasks));
+			printf("avg wait: %u\r\n", avgWait(finishedTasks, numberOfTasks));
+			printf("\r\n");
+			for (int i = 0; i < numberOfTasks; ++i) {
+				finishedTasks[i] = -1;
+			}
 		}
     }
 }
@@ -382,10 +404,8 @@ void ComputingTask(void *pvParameters) {
     vTaskDelete(NULL); // delete the task before returning
 }
 
-void FCFS(int l1, int l2, int l3, int l4, int l5, int l6, int l7, int l8) {
-    int cycles[] = {l1, l2, l3, l4, l5, l6, l7, l8};
-    
-    for (unsigned int i = 0; i < sizeof(cycles) / sizeof(cycles[0]); ++i) {
+void FCFS(int cycles[], int numTasks) {
+    for (int i = 0; i < numTasks; ++i) {
         int *params = (int *)pvPortMalloc(sizeof(int));
         *params = cycles[i];
 
@@ -405,27 +425,24 @@ int compare(const void *a, const void *b) {
     return ((TaskInfo*)a)->cycle - ((TaskInfo*)b)->cycle;
 }
 
-void SJF(int l1, int l2, int l3, int l4, int l5, int l6, int l7, int l8) {
-    int cycles[] = {l1, l2, l3, l4, l5, l6, l7, l8};
-    int n = sizeof(cycles) / sizeof(cycles[0]);
-
-    TaskInfo taskInfo[n];
-    for (int i = 0; i < n; i++) {
+void SJF(int cycles[], int numTasks) {
+    TaskInfo taskInfo[numTasks];
+    for (int i = 0; i < numTasks; i++) {
         taskInfo[i].cycle = cycles[i];
         taskInfo[i].taskName = (char*)pvPortMalloc(8);
         snprintf(taskInfo[i].taskName, 8, "Task%d", i + 1);
     }
 
-    qsort(taskInfo, n, sizeof(taskInfo[0]), compare);
+    qsort(taskInfo, numTasks, sizeof(taskInfo[0]), compare);
 
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < numTasks; i++) {
         int *params = (int *)pvPortMalloc(sizeof(int));
         *params = taskInfo[i].cycle;
 
         xTaskCreate(ComputingTask, taskInfo[i].taskName, configMINIMAL_STACK_SIZE * 10, params, tskIDLE_PRIORITY + 1, NULL);
     }
 
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < numTasks; i++) {
         vPortFree(taskInfo[i].taskName);
     }
 }
@@ -466,4 +483,16 @@ int avgWait(int *array, int size) {
 		res += array[i];
     }
 	return res/size;
+}
+
+int randomCycle(int min, int max) {
+    return rand() % (max - min + 1) + min;
+}
+
+void generateTasksParams(int* array, int size) {
+	seed = (unsigned int)xTaskGetTickCount();
+
+    for (int i = 0; i < size; i++) {
+        array[i] = rand_r(&seed) % (1000000 - 10000000 + 1);
+    }
 }
