@@ -47,19 +47,16 @@ required UART registers. */
 
 #define NORMALBUFLEN	50					// size of a "general purpose" buffer
 
-void executeCommand( char command[] );
 static void vCommandlineTask( void *pvParameter );
 
 xQueueHandle xQueueUART;
 
-void vTaskFunctionCmd(void *pvParameters);
+// void vTaskFunctionCmd(void *pvParameters);
 
-void vFullDemoTickHookFunction( void );
+// void vFullDemoTickHookFunction( void );
 
 static void prvUARTInit( void );
 void UART0RX_Handler(void);
-
-void vTaskStartMyScheduler( void );
 
 void ComputingTask(void *pvParameters);
 
@@ -73,6 +70,7 @@ void append(int *array, int size, int newElement);
 
 int avgTime(int *array, int size);
 int avgWait(int *array, int size);
+int avgTurnaroundTime(int *array, int size);
 
 int randomCycle(int min, int max);
 void generateTasksParams(int* array, int size);
@@ -384,6 +382,7 @@ static void vCommandlineTask(void *pvParameters) {
 		if (finishedTasks[0] != -1) {
 			printf("avg time: %u\r\n", avgTime(finishedTasks, numberOfTasks));
 			printf("avg wait: %u\r\n", avgWait(finishedTasks, numberOfTasks));
+			printf("avg turn-around time: %u\r\n", avgTurnaroundTime(finishedTasks, numberOfTasks));
 			printf("\r\n");
 			for (int i = 0; i < numberOfTasks; ++i) {
 				finishedTasks[i] = -1;
@@ -513,6 +512,14 @@ int avgWait(int *array, int size) {
 	int res = 0;
     for (int i = 0; i < size-1; ++i) {
 		res += array[i] * (size-i-1);
+    }
+	return res/size;
+}
+
+int avgTurnaroundTime(int *array, int size) {
+	int res = 0;
+    for (int i = 0; i < size; ++i) {
+		res += array[i] * (size-i);
     }
 	return res/size;
 }
