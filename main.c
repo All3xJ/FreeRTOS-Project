@@ -58,29 +58,45 @@ xQueueHandle xQueueUART;
 static void prvUARTInit( void );
 void UART0RX_Handler(void);
 
+// Task just do some arithmetics calculation, the longer the number passed, the more complex the computation
 void ComputingTask(void *pvParameters);
 
+// First- Come, First-Served
 void FCFS(int cycles[], int numTasks);
+// Shortest Job First
 void SJF(int cycles[], int numTasks);
+// Longest Job First
 void LJF(int cycles[], int numTasks);
+
+// Comparison used by SJF
 int compareSJF(const void *a, const void *b);
+// Comparison used by LJF
 int compareLJF(const void *a, const void *b);
 
+// Function used to append values to an array (last element defined by -1)
 void append(int *array, int size, int newElement);
 
+// Calculate average time of execution of all tasks
 int avgTime(int *array, int size);
+// Calculate average time waiting time of all tasks
 int avgWait(int *array, int size);
+// Calculate average turn-around time time of all tasks
 int avgTurnaroundTime(int *array, int size);
 
+// Calculates random values between 1000000 and 10000000
 int randomCycle(int min, int max);
+// Generates the values to pass to initalize tasks
 void generateTasksParams(int* array, int size);
 
+// Seed for randomness
 unsigned int seed = 0;
 
 #define numberOfTasks 9 // Change this value to change the numbers of tasks to run
 
+// Array used to store the time each task took to complete, first value, first task to finish
 int finishedTasks[numberOfTasks];
 
+// Array used to store the random value to initialize tasks
 int tasksParams[numberOfTasks];
 
 /*
@@ -96,6 +112,7 @@ void main( void )
 	/* Hardware initialisation.  printf() output uses the UART for IO. */
 	prvUARTInit();
 
+	// Initialize finishedTasks and tasksParams setting all values to -1
 	for (int i = 0; i < numberOfTasks; ++i) {
         finishedTasks[i] = -1;
     }
@@ -104,6 +121,7 @@ void main( void )
         tasksParams[i] = -1;
     }
 
+	// This is our command line task
 	xTaskCreate(vCommandlineTask, "Commandline Task", configMINIMAL_STACK_SIZE * 5, NULL, tskIDLE_PRIORITY + 2, NULL);
 
   	vTaskStartScheduler();
@@ -384,6 +402,7 @@ static void vCommandlineTask(void *pvParameters) {
 			printf("avg wait: %u\r\n", avgWait(finishedTasks, numberOfTasks));
 			printf("avg turn-around time: %u\r\n", avgTurnaroundTime(finishedTasks, numberOfTasks));
 			printf("\r\n");
+			// Restoring the finishedTasks array to -1 for a further execution
 			for (int i = 0; i < numberOfTasks; ++i) {
 				finishedTasks[i] = -1;
 			}
