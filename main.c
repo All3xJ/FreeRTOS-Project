@@ -497,19 +497,6 @@ void LJF(int cycles[], int numTasks) {
     }
 }
 
-/*
-	FCFS --> just normal order, no preemption
-	SJF --> order can be determined, no preemption
-
-	RR --> no order just preempting a time quantum
-
-	SRT --> like SJF but preemption cause task arrriving late
-
-	RM --> pereempting based on period
-
-	EDF --> gives higher priorites to deadline
-*/
-
 void append(int *array, int size, int newElement) {
     for (int i = 0; i < size; ++i) {
         if (array[i] == -1) {
