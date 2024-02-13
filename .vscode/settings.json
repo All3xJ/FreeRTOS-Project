@@ -15,6 +15,10 @@
         "unordered_map": "c",
         "vector": "c",
         "random": "c",
-        "format": "c"
+        "format": "c",
+        "cstdint": "c",
+        "__bit_reference": "c",
+        "ios": "c",
+        "chrono": "c"
     }
 }

@@ -110,7 +110,19 @@ void main( void )
     }
 
 	// This is our command line task
-	xTaskCreate(vCommandlineTask, "Commandline Task", configMINIMAL_STACK_SIZE * 5, NULL, tskIDLE_PRIORITY + 2, NULL);
+	// xTaskCreateDeadline(vCommandlineTask, "Commandline Task", configMINIMAL_STACK_SIZE * 5, NULL, tskIDLE_PRIORITY + 2, NULL, 50);
+
+	int *params1 = (int *)pvPortMalloc(sizeof(int));
+	params1[0] = 10000000;
+	xTaskCreateDeadline(ComputingTask, "Task 1", configMINIMAL_STACK_SIZE * 5, params1, tskIDLE_PRIORITY + 2, NULL, 100);
+
+	int *params2 = (int *)pvPortMalloc(sizeof(int));
+	params2[0] = 50000000;
+	xTaskCreateDeadline(ComputingTask, "Task 2", configMINIMAL_STACK_SIZE * 5, params2, tskIDLE_PRIORITY + 2, NULL, 200);
+
+	int *params3 = (int *)pvPortMalloc(sizeof(int));
+	params3[0] = 100000000;
+	xTaskCreateDeadline(ComputingTask, "Task 3", configMINIMAL_STACK_SIZE * 5, params3, tskIDLE_PRIORITY + 2, NULL, 300);
 
   	vTaskStartScheduler();
 
@@ -324,7 +336,7 @@ static void vCommandlineTask(void *pvParameters) {
 		printf("9 - Generate or regenerate the tasks\n\r");
         printf("1 - Option 1\n\r");
         printf("2 - Option 2\n\r");
-		printf("2 - Option 3\n\r");
+		printf("3 - Option 3\n\r");
         printf("0 - to exit\n\r");
 
         while (index < NORMALBUFLEN - 1) {
@@ -384,16 +396,16 @@ static void vCommandlineTask(void *pvParameters) {
             default:
                 printf("\nWrong selection\n");
         }
-		vTaskDelay(1000);
+		// vTaskDelay(1000);
 		if (finishedTasks[0] != -1) {
 			// printf("avg time: %u\r\n", avgTime(finishedTasks, numberOfTasks));
 			// printf("avg wait: %u\r\n", avgWait(finishedTasks, numberOfTasks));
 			// printf("avg turn-around time: %u\r\n", avgTurnaroundTime(finishedTasks, numberOfTasks));
 			printf("\r\n");
 			// Restoring the finishedTasks array to -1 for a further execution
-			for (int i = 0; i < numberOfTasks; ++i) {
-				finishedTasks[i] = -1;
-			}
+			// for (int i = 0; i < numberOfTasks; ++i) {
+			// 	finishedTasks[i] = -1;
+			// }
 		}
     }
 }
@@ -404,6 +416,7 @@ void ComputingTask(void *pvParameters) {
     TickType_t start = xTaskGetTickCount();
     int n = *((int*)pvParameters);
 	const char *taskName = pcTaskGetName(NULL);
+	printf("%s start time: %u\r\n", taskName, start);
     int res = 1;
 
     for (int i = 1; i <= n; ++i) {
@@ -411,6 +424,7 @@ void ComputingTask(void *pvParameters) {
     }
 
     TickType_t end = xTaskGetTickCount() - start;
+	printf("%s end time: %u\r\n", taskName, xTaskGetTickCount());
     printf("%s elapsed time: %u\r\n", taskName, end);
     append(finishedTasks, numberOfTasks, end);
     vTaskDelete(NULL); // delete the task before returning

@@ -41,6 +41,8 @@ void vTaskFunction(void *pvParameters);
  * See http://www.freertos.org/a00110.html
  *----------------------------------------------------------*/
 
+#define configUSE_EDF_SCHEDULER 1
+
 #define configUSE_TRACE_FACILITY 1
 #define configGENERATE_RUN_TIME_STATS 1
 
@@ -70,7 +72,7 @@ void vConfigureTimerForRunTimeStats( void );    /* Prototype of function that in
 
 #define configMAX_PRIORITIES			( 9UL )
 #define configQUEUE_REGISTRY_SIZE		10
-#define configSUPPORT_STATIC_ALLOCATION	1
+#define configSUPPORT_STATIC_ALLOCATION	0
 
 /* Timer related defines. */
 #define configUSE_TIMERS				1
