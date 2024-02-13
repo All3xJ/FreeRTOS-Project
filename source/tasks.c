@@ -223,7 +223,7 @@
 	
 #define prvAddTaskToReadyList(pxTCB) \
 	traceMOVED_TASK_TO_READY_STATE(pxTCB); \
-	vListInsert( &(xReadyTasksListEDF), & ((pxTCB)->xStateListItem)); \
+	vListInsert( &(xReadyTasksListEDF), & ((pxTCB)->xStateListItem)); /* Insert the node xStateListItem in xReadyTasksListEDF based on xStateListItem.xItemValue (our deadline) in ascending order */ \ 
 	tracePOST_MOVED_TASK_TO_READY_STATE(pxTCB)
 	
 #else
@@ -334,7 +334,7 @@ typedef struct tskTaskControlBlock       /* The old naming convention is used to
     #endif
 
     #if ( configUSE_EDF_SCHEDULER == 1 )
-       TickType_t xTaskPeriod;
+       TickType_t xTaskDeadline; // new attribute holding the amount of ticks in which the task has to be completed by
     #endif
 
 } tskTCB;
@@ -352,7 +352,7 @@ portDONT_DISCARD PRIVILEGED_DATA TCB_t * volatile pxCurrentTCB = NULL;
  * doing so breaks some kernel aware debuggers and debuggers that rely on removing
  * the static qualifier. */
 PRIVILEGED_DATA static List_t pxReadyTasksLists[ configMAX_PRIORITIES ]; /*< Prioritised ready tasks. */
-PRIVILEGED_DATA static List_t xReadyTasksListEDF;                        /* added */
+PRIVILEGED_DATA static List_t xReadyTasksListEDF;                        /* new list holding tasks with deadline */
 PRIVILEGED_DATA static List_t xDelayedTaskList1;                         /*< Delayed tasks. */
 PRIVILEGED_DATA static List_t xDelayedTaskList2;                         /*< Delayed tasks (two lists are used - one for delays that have overflowed the current tick count. */
 PRIVILEGED_DATA static List_t * volatile pxDelayedTaskList;              /*< Points to the delayed task list currently being used. */
@@ -2025,7 +2025,7 @@ void vTaskStartScheduler( void )
     /* The Idle task is being created using dynamically allocated RAM. */
 		
 		#if(configUSE_EDF_SCHEDULER == 1)
-			TickType_t IDLEDeadline = 1569325056;
+			TickType_t IDLEDeadline = 4294967295; // deadline of the idle task set to the highest possibile value
 		  xReturn = xTaskCreateDeadline(
         prvIdleTask, configIDLE_TASK_NAME, configMINIMAL_STACK_SIZE,
         (void *)NULL,
@@ -2861,7 +2861,7 @@ BaseType_t xTaskIncrementTick( void )
                     #if (configUSE_EDF_SCHEDULER == 1)
                     {
                         listSET_LIST_ITEM_VALUE( &( ( pxTCB )->xStateListItem),
-                        ( pxTCB )->xTaskPeriod + xTickCount );
+                        ( pxTCB )->xTaskDeadline + xTickCount );
                     }
                     #endif
 
@@ -3142,7 +3142,7 @@ void vTaskSwitchContext( void )
         }
         #else
         {
-            pxCurrentTCB = (TCB_t * ) listGET_OWNER_OF_HEAD_ENTRY( &( xReadyTasksListEDF ) );
+            pxCurrentTCB = (TCB_t * ) listGET_OWNER_OF_HEAD_ENTRY( &( xReadyTasksListEDF ) ); // The task at the top of xReadyTasksListEDF is selected as the new task to run
         }
         #endif
 
@@ -3752,7 +3752,7 @@ static void prvInitialiseTaskLists( void )
 
     #if ( configUSE_EDF_SCHEDULER == 1 )
     {
-        vListInitialise( &xReadyTasksListEDF );
+        vListInitialise( &xReadyTasksListEDF ); // Initializazion of xReadyTasksListEDF
     }
     #endif
 
@@ -5527,6 +5527,7 @@ static void prvAddCurrentTaskToDelayedList( TickType_t xTicksToWait,
     PRIVILEGED_DATA static List_t xReadyTasksListEDF;
 #endif
 
+// Definition of the new task creation method that takes a deadline measured by ticks as input
 BaseType_t xTaskCreateDeadline( TaskFunction_t pxTaskCode,
                             const char * const pcName, /*lint !e971 Unqualified char types are allowed for strings and single characters only. */
                             const configSTACK_DEPTH_TYPE usStackDepth,
@@ -5583,7 +5584,7 @@ BaseType_t xTaskCreateDeadline( TaskFunction_t pxTaskCode,
 
                     /* Store the stack location in the TCB. */
                     pxNewTCB->pxStack = pxStack;
-                    pxNewTCB->xTaskPeriod = deadline; // deadline
+                    pxNewTCB->xTaskDeadline = deadline; // Storing the deadline in the TCB
                 }
                 else
                 {
@@ -5610,8 +5611,8 @@ BaseType_t xTaskCreateDeadline( TaskFunction_t pxTaskCode,
             #endif /* tskSTATIC_AND_DYNAMIC_ALLOCATION_POSSIBLE */
 
             prvInitialiseNewTask( pxTaskCode, pcName, ( uint32_t ) usStackDepth, pvParameters, uxPriority, pxCreatedTask, pxNewTCB, NULL );
-            pxNewTCB->xTaskPeriod = deadline;
-            listSET_LIST_ITEM_VALUE( &( ( pxNewTCB )->xStateListItem ), ( pxNewTCB )->xTaskPeriod + xTickCount);
+            pxNewTCB->xTaskDeadline = deadline; // Storing the deadline in the TCB
+            listSET_LIST_ITEM_VALUE( &( ( pxNewTCB )->xStateListItem ), ( pxNewTCB )->xTaskDeadline + xTickCount); // Set xValue of xStateListItem for the given TCB to the value of the deadline
             prvAddNewTaskToReadyList( pxNewTCB );
             xReturn = pdPASS;
         }

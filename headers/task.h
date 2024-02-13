@@ -3119,6 +3119,7 @@ void vTaskInternalSetTimeOutState( TimeOut_t * const pxTimeOut ) PRIVILEGED_FUNC
 
 /* ---------- EDF ----------*/
 
+// Declaration of the new task creation method that takes a deadline measured by ticks as input
 BaseType_t xTaskCreateDeadline( TaskFunction_t pxTaskCode,
                             const char * const pcName, /*lint !e971 Unqualified char types are allowed for strings and single characters only. */
                             const configSTACK_DEPTH_TYPE usStackDepth,

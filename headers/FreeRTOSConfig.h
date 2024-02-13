@@ -41,7 +41,7 @@ void vTaskFunction(void *pvParameters);
  * See http://www.freertos.org/a00110.html
  *----------------------------------------------------------*/
 
-#define configUSE_EDF_SCHEDULER 1
+#define configUSE_EDF_SCHEDULER 1 // Macro to enable the EDF Scheduling Algoirthm
 
 #define configUSE_TRACE_FACILITY 1
 #define configGENERATE_RUN_TIME_STATS 1
