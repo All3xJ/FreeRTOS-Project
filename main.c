@@ -61,6 +61,8 @@ void UART0RX_Handler(void);
 // Task just do some arithmetics calculation, the longer the number passed, the more complex the computation
 void ComputingTask(void *pvParameters);
 
+void ComputingTaskTest(void *pvParameters);
+
 // Function used to append values to an array (last element defined by -1)
 void append(int *array, int size, int newElement);
 
@@ -114,15 +116,15 @@ void main( void )
 
 	int *params1 = (int *)pvPortMalloc(sizeof(int));
 	params1[0] = 10000000;
-	xTaskCreateDeadline(ComputingTask, "Task 1", configMINIMAL_STACK_SIZE * 5, params1, tskIDLE_PRIORITY + 2, NULL, 100);
+	xTaskCreateDeadline(ComputingTask, "Task 1", configMINIMAL_STACK_SIZE * 5, params1, tskIDLE_PRIORITY + 2, NULL, 1000);
 
 	int *params2 = (int *)pvPortMalloc(sizeof(int));
 	params2[0] = 50000000;
-	xTaskCreateDeadline(ComputingTask, "Task 2", configMINIMAL_STACK_SIZE * 5, params2, tskIDLE_PRIORITY + 2, NULL, 200);
+	xTaskCreateDeadline(ComputingTaskTest, "Task 2", configMINIMAL_STACK_SIZE * 5, params2, tskIDLE_PRIORITY + 2, NULL, 2000);
 
 	int *params3 = (int *)pvPortMalloc(sizeof(int));
 	params3[0] = 100000000;
-	xTaskCreateDeadline(ComputingTask, "Task 3", configMINIMAL_STACK_SIZE * 5, params3, tskIDLE_PRIORITY + 2, NULL, 300);
+	xTaskCreateDeadline(ComputingTask, "Task 3", configMINIMAL_STACK_SIZE * 5, params3, tskIDLE_PRIORITY + 2, NULL, 3000);
 
   	vTaskStartScheduler();
 
@@ -418,6 +420,28 @@ void ComputingTask(void *pvParameters) {
 	const char *taskName = pcTaskGetName(NULL);
 	printf("%s start time: %u\r\n", taskName, start);
     int res = 1;
+
+    for (int i = 1; i <= n; ++i) {
+        res *= i;
+    }
+
+    TickType_t end = xTaskGetTickCount() - start;
+	printf("%s end time: %u\r\n", taskName, xTaskGetTickCount());
+    printf("%s elapsed time: %u\r\n", taskName, end);
+    append(finishedTasks, numberOfTasks, end);
+    vTaskDelete(NULL); // delete the task before returning
+}
+
+void ComputingTaskTest(void *pvParameters) {
+    TickType_t start = xTaskGetTickCount();
+    int n = *((int*)pvParameters);
+	const char *taskName = pcTaskGetName(NULL);
+	printf("%s start time: %u\r\n", taskName, start);
+    int res = 1;
+
+	int *params4 = (int *)pvPortMalloc(sizeof(int));
+	params4[0] = 10000000;
+	xTaskCreateDeadline(ComputingTask, "Task 4", configMINIMAL_STACK_SIZE * 5, params4, tskIDLE_PRIORITY + 2, NULL, 10);
 
     for (int i = 1; i <= n; ++i) {
         res *= i;

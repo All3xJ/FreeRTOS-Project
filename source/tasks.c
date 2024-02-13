@@ -1109,16 +1109,34 @@ static void prvAddNewTaskToReadyList( TCB_t * pxNewTCB )
 
     if( xSchedulerRunning != pdFALSE )
     {
-        /* If the created task is of a higher priority than the current task
-         * then it should run now. */
-        if( pxCurrentTCB->uxPriority < pxNewTCB->uxPriority )
+
+        #if (configUSE_EDF_SCHEDULER == 1)
         {
-            taskYIELD_IF_USING_PREEMPTION();
+            if( pxCurrentTCB->xStateListItem.xItemValue > pxNewTCB->xStateListItem.xItemValue )
+            {
+                taskYIELD_IF_USING_PREEMPTION();
+            }
+            else
+            {
+                mtCOVERAGE_TEST_MARKER();
+            }
         }
-        else
+        #else
         {
-            mtCOVERAGE_TEST_MARKER();
+            /* If the created task is of a higher priority than the current task
+            * then it should run now. */
+            if( pxCurrentTCB->uxPriority < pxNewTCB->uxPriority )
+            {
+                taskYIELD_IF_USING_PREEMPTION();
+            }
+            else
+            {
+                mtCOVERAGE_TEST_MARKER();
+            }
         }
+        #endif
+
+
     }
     else
     {
@@ -2839,6 +2857,14 @@ BaseType_t xTaskIncrementTick( void )
 
                     /* Place the unblocked task into the appropriate ready
                      * list. */
+
+                    #if (configUSE_EDF_SCHEDULER == 1)
+                    {
+                        listSET_LIST_ITEM_VALUE( &( ( pxTCB )->xStateListItem),
+                        ( pxTCB )->xTaskPeriod + xTickCount );
+                    }
+                    #endif
+
                     prvAddTaskToReadyList( pxTCB );
 
                     /* A task being unblocked cannot cause an immediate
@@ -2853,14 +2879,30 @@ BaseType_t xTaskIncrementTick( void )
                          * processing time (which happens when both
                          * preemption and time slicing are on) is
                          * handled below.*/
-                        if( pxTCB->uxPriority > pxCurrentTCB->uxPriority )
+
+                        #if (configUSE_EDF_SCHEDULER == 1)
                         {
-                            xSwitchRequired = pdTRUE;
+                            if( pxTCB->xStateListItem.xItemValue < pxCurrentTCB->xStateListItem.xItemValue )
+                            {
+                                xSwitchRequired = pdTRUE;
+                            }
+                            else
+                            {
+                                mtCOVERAGE_TEST_MARKER();
+                            }
                         }
-                        else
+                        #else
                         {
-                            mtCOVERAGE_TEST_MARKER();
+                            if( pxTCB->uxPriority > pxCurrentTCB->uxPriority )
+                            {
+                                xSwitchRequired = pdTRUE;
+                            }
+                            else
+                            {
+                                mtCOVERAGE_TEST_MARKER();
+                            }
                         }
+                        #endif /* configUSE_EDF_SCHEDULER == 1 */
                     }
                     #endif /* configUSE_PREEMPTION */
                 }
