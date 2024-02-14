@@ -337,9 +337,7 @@ typedef struct tskTaskControlBlock       /* The old naming convention is used to
         int iTaskErrno;
     #endif
 
-    #if ( configUSE_EDF_SCHEDULER == 1 )
-       TickType_t xTaskDeadline; // new attribute holding the amount of ticks in which the task has to be completed by
-    #endif
+    TickType_t xTaskDeadline; // new attribute holding the amount of ticks in which the task has to be completed by
 
 } tskTCB;
 
