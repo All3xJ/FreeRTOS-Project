@@ -41,6 +41,8 @@
 #include "timers.h"
 #include "stack_macros.h"
 
+#include "dictionaries.h" // custom lib to implement dictionaries
+
 /* Lint e9021, e961 and e750 are suppressed as a MISRA exception justified
  * because the MPU ports require MPU_WRAPPERS_INCLUDED_FROM_API_FILE to be defined
  * for the header files above, but not in this file, in order to generate the
@@ -219,11 +221,13 @@
  * the task.  It is inserted at the end of the list.
  */
 
+/* vListInsert --> Insert the node xStateListItem in xReadyTasksListEDF based on xStateListItem.xItemValue (our deadline) in ascending order */ 
+
 #if configUSE_EDF_SCHEDULER == 1
 	
 #define prvAddTaskToReadyList(pxTCB) \
 	traceMOVED_TASK_TO_READY_STATE(pxTCB); \
-	vListInsert( &(xReadyTasksListEDF), & ((pxTCB)->xStateListItem)); /* Insert the node xStateListItem in xReadyTasksListEDF based on xStateListItem.xItemValue (our deadline) in ascending order */ \ 
+	vListInsert( &(xReadyTasksListEDF), & ((pxTCB)->xStateListItem)); \
 	tracePOST_MOVED_TASK_TO_READY_STATE(pxTCB)
 	
 #else
@@ -5613,6 +5617,7 @@ BaseType_t xTaskCreateDeadline( TaskFunction_t pxTaskCode,
             prvInitialiseNewTask( pxTaskCode, pcName, ( uint32_t ) usStackDepth, pvParameters, uxPriority, pxCreatedTask, pxNewTCB, NULL );
             pxNewTCB->xTaskDeadline = deadline; // Storing the deadline in the TCB
             listSET_LIST_ITEM_VALUE( &( ( pxNewTCB )->xStateListItem ), ( pxNewTCB )->xTaskDeadline + xTickCount); // Set xValue of xStateListItem for the given TCB to the value of the deadline
+            insertStarting(pcName, (int)xTaskGetTickCount());
             prvAddNewTaskToReadyList( pxNewTCB );
             xReturn = pdPASS;
         }

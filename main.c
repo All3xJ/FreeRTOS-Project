@@ -30,6 +30,8 @@
 #include "queue.h"
 #include <SMM_MPS2.h>
 
+#include "dictionaries.h" // custom lib to implement dictionaries
+
 /* Standard includes. */
 #include <stdio.h>
 #include <string.h>
@@ -75,8 +77,15 @@ int avgTurnaroundTime(int *array, int size);
 
 // Calculates random values between 1000000 and 10000000
 int randomCycle(int min, int max);
+
 // Generates the values to pass to initalize tasks
 void generateTasksParams(int* array, int size);
+
+// Generates the values to pass to initalize tasks
+void generateDeadlines(int* array, int size);
+
+// Generating tasks with array of params as input
+void CreateTasks();
 
 // Seed for randomness
 unsigned int seed = 0;
@@ -84,10 +93,16 @@ unsigned int seed = 0;
 #define numberOfTasks 9 // Change this value to change the numbers of tasks to run
 
 // Array used to store the time each task took to complete, first value, first task to finish
-int finishedTasks[numberOfTasks];
+// int finishedTasks[numberOfTasks]; // replaced by dict
 
 // Array used to store the random value to initialize tasks
 int tasksParams[numberOfTasks];
+
+// Array used to store the random deadlines to initialize tasks
+int tasksDeadlines[numberOfTasks];
+
+// Task for checking if the deadline have been respected
+void CheckResTasks(void *pvParameters);
 
 /*
  * Printf() output is sent to the serial port.  Initialise the serial hardware.
@@ -103,28 +118,20 @@ void main( void )
 	prvUARTInit();
 
 	// Initialize finishedTasks and tasksParams setting all values to -1
-	for (int i = 0; i < numberOfTasks; ++i) {
-        finishedTasks[i] = -1;
-    }
+	// for (int i = 0; i < numberOfTasks; ++i) {
+    //     finishedTasks[i] = -1;
+    // }
 
 	for (int i = 0; i < numberOfTasks; ++i) {
         tasksParams[i] = -1;
     }
 
+	for (int i = 0; i < numberOfTasks; ++i) {
+        tasksDeadlines[i] = -1;
+    }
+
 	// This is our command line task
-	// xTaskCreateDeadline(vCommandlineTask, "Commandline Task", configMINIMAL_STACK_SIZE * 5, NULL, tskIDLE_PRIORITY + 2, NULL, 50);
-
-	int *params1 = (int *)pvPortMalloc(sizeof(int));
-	params1[0] = 10000000;
-	xTaskCreateDeadline(ComputingTask, "Task 1", configMINIMAL_STACK_SIZE * 5, params1, tskIDLE_PRIORITY + 2, NULL, 1000);
-
-	int *params2 = (int *)pvPortMalloc(sizeof(int));
-	params2[0] = 50000000;
-	xTaskCreateDeadline(ComputingTaskTest, "Task 2", configMINIMAL_STACK_SIZE * 5, params2, tskIDLE_PRIORITY + 2, NULL, 2000);
-
-	int *params3 = (int *)pvPortMalloc(sizeof(int));
-	params3[0] = 100000000;
-	xTaskCreateDeadline(ComputingTask, "Task 3", configMINIMAL_STACK_SIZE * 5, params3, tskIDLE_PRIORITY + 2, NULL, 3000);
+	xTaskCreateDeadline(vCommandlineTask, "Commandline Task", configMINIMAL_STACK_SIZE * 5, NULL, tskIDLE_PRIORITY + 2, NULL, 3000000-1);
 
   	vTaskStartScheduler();
 
@@ -335,10 +342,10 @@ static void vCommandlineTask(void *pvParameters) {
         int index = 0;
 
         printf("Select the following:\n\r");
-		printf("9 - Generate or regenerate the tasks\n\r");
-        printf("1 - Option 1\n\r");
-        printf("2 - Option 2\n\r");
-		printf("3 - Option 3\n\r");
+		printf("1 - Generate or regenerate the tasks\n\r");
+        printf("2 - Generate or regenerate the deadlines\n\r");
+        printf("3 - Execute the tasks\n\r");
+		printf("4 - Print if deadlines got missed or respected\n\r");
         printf("0 - to exit\n\r");
 
         while (index < NORMALBUFLEN - 1) {
@@ -359,37 +366,41 @@ static void vCommandlineTask(void *pvParameters) {
         int choice = atoi(inputString); // convert string to integer
 
         switch (choice) {
-			case 9:
-				generateTasksParams(tasksParams, numberOfTasks);
-				printf("Tasks generated\r\n");
+			case 1:
+				generateTasksParams(tasksParams, numberOfTasks);					
+				printf("Params generated\r\n");
 				printf("\r\n");
 				break;
-            case 1:
-				if (tasksParams[0] == -1) {
-					printf("First of all generate some tasks with options 9\r\n");
-					printf("\r\n");
-					break;
-				}
-				// printf("Selected FCFS\r\n");
-				// FCFS(tasksParams, numberOfTasks);
-                break;
             case 2:
-				if (tasksParams[0] == -1) {
-					printf("First of all generate some tasks with options 9\r\n");
-					printf("\r\n");
-					break;
-				}
-                // printf("Selected SJF\r\n");
-				// SJF(tasksParams, numberOfTasks);    
+				generateDeadlines(tasksDeadlines, numberOfTasks);
+				printf("Deadlines generated\r\n");
+				printf("\r\n");
                 break;
-			case 3:
+            case 3:
 				if (tasksParams[0] == -1) {
-					printf("First of all generate some tasks with options 9\r\n");
+					printf("First of all generate some tasks with options 1\r\n");
 					printf("\r\n");
 					break;
 				}
-                // printf("Selected LJF\r\n");
-				// LJF(tasksParams, numberOfTasks);    
+				if (tasksDeadlines[0] == -1) {
+					printf("First of all generate some deadlines with options 2\r\n");
+					printf("\r\n");
+					break;
+				}
+				CreateTasks();  
+                break;
+			case 4:
+				if (tasksParams[0] == -1) {
+					printf("First of all generate some tasks with options 1\r\n");
+					printf("\r\n");
+					break;
+				}
+				if (tasksDeadlines[0] == -1) {
+					printf("First of all generate some deadlines with options 2\r\n");
+					printf("\r\n");
+					break;
+				}
+				xTaskCreateDeadline(CheckResTasks, "CheckResTasks", configMINIMAL_STACK_SIZE * 5, NULL, tskIDLE_PRIORITY + 2, NULL, 3000000);
                 break;
             case 0:
                 printf("\nExiting the cycle\n");
@@ -398,17 +409,17 @@ static void vCommandlineTask(void *pvParameters) {
             default:
                 printf("\nWrong selection\n");
         }
-		// vTaskDelay(1000);
-		if (finishedTasks[0] != -1) {
+		vTaskDelay(1000);
+		// if (finishedTasks[0] != -1) {
 			// printf("avg time: %u\r\n", avgTime(finishedTasks, numberOfTasks));
 			// printf("avg wait: %u\r\n", avgWait(finishedTasks, numberOfTasks));
 			// printf("avg turn-around time: %u\r\n", avgTurnaroundTime(finishedTasks, numberOfTasks));
-			printf("\r\n");
+			// printf("\r\n");
 			// Restoring the finishedTasks array to -1 for a further execution
 			// for (int i = 0; i < numberOfTasks; ++i) {
 			// 	finishedTasks[i] = -1;
 			// }
-		}
+		// }
     }
 }
 
@@ -418,7 +429,7 @@ void ComputingTask(void *pvParameters) {
     TickType_t start = xTaskGetTickCount();
     int n = *((int*)pvParameters);
 	const char *taskName = pcTaskGetName(NULL);
-	printf("%s start time: %u\r\n", taskName, start);
+	printf("%s start time: %u\r\n", taskName, (int)start);
     int res = 1;
 
     for (int i = 1; i <= n; ++i) {
@@ -426,9 +437,10 @@ void ComputingTask(void *pvParameters) {
     }
 
     TickType_t end = xTaskGetTickCount() - start;
-	printf("%s end time: %u\r\n", taskName, xTaskGetTickCount());
-    printf("%s elapsed time: %u\r\n", taskName, end);
-    append(finishedTasks, numberOfTasks, end);
+	printf("%s end time: %u\r\n", taskName, (int)xTaskGetTickCount());
+    printf("%s elapsed time: %u\r\n", taskName, (int)end);
+    // append(finishedTasks, numberOfTasks, end);
+	insertFinished(taskName, (int)end);
     vTaskDelete(NULL); // delete the task before returning
 }
 
@@ -436,7 +448,7 @@ void ComputingTaskTest(void *pvParameters) {
     TickType_t start = xTaskGetTickCount();
     int n = *((int*)pvParameters);
 	const char *taskName = pcTaskGetName(NULL);
-	printf("%s start time: %u\r\n", taskName, start);
+	printf("%s start time: %u\r\n", taskName, (int)start);
     int res = 1;
 
 	int *params4 = (int *)pvPortMalloc(sizeof(int));
@@ -448,9 +460,10 @@ void ComputingTaskTest(void *pvParameters) {
     }
 
     TickType_t end = xTaskGetTickCount() - start;
-	printf("%s end time: %u\r\n", taskName, xTaskGetTickCount());
-    printf("%s elapsed time: %u\r\n", taskName, end);
-    append(finishedTasks, numberOfTasks, end);
+	printf("%s end time: %u\r\n", taskName, (int)xTaskGetTickCount());
+    printf("%s elapsed time: %u\r\n", taskName, (int)end);
+    // append(finishedTasks, numberOfTasks, end);
+	insertFinished(taskName, (int)end);
     vTaskDelete(NULL); // delete the task before returning
 }
 
@@ -495,6 +508,44 @@ void generateTasksParams(int* array, int size) {
 	seed = (unsigned int)xTaskGetTickCount();
 
     for (int i = 0; i < size; i++) {
-        array[i] = rand_r(&seed) % (1000000 - 10000000 + 1);
+        array[i] = rand_r(&seed) % (1000000 - 10000000 + 1); // Parameters to "play" with to change task durations
+    }
+}
+
+void generateDeadlines(int* array, int size) {
+	seed = (unsigned int)xTaskGetTickCount();
+
+    for (int i = 0; i < size; i++) {
+        array[i] = rand_r(&seed) % (100 - 1000 + 1); // Parameters to "play" with to change deadlines
+    }
+}
+
+void CheckResTasks(void *pvParameters) {
+	(void)pvParameters; // Ignores params not utilized alert
+	for (int i = 0; i < numberOfTasks; ++i) {
+		char taskName[10];
+		snprintf(taskName, sizeof(taskName), "Task%d", i + 1);
+
+		if (getFinished(taskName) - getStarting(taskName) > tasksDeadlines[i])
+		{
+			printf("%s has missed the deadline\r\n", taskName);
+		}
+		else
+		{
+			printf("%s has respected the deadline\r\n", taskName);
+		}
+	}
+    vTaskDelete(NULL); // delete the task before returning
+}
+
+void CreateTasks() {
+	for (int i = 0; i < numberOfTasks; ++i) {
+        int *params = (int *)pvPortMalloc(sizeof(int));
+        *params = tasksParams[i];
+
+        char taskName[10];
+        snprintf(taskName, sizeof(taskName), "Task%d", i + 1);
+
+        xTaskCreateDeadline(ComputingTask, taskName, configMINIMAL_STACK_SIZE * 10, params, tskIDLE_PRIORITY + 1, NULL, tasksDeadlines[i]);
     }
 }

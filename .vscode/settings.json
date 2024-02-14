@@ -19,6 +19,7 @@
         "cstdint": "c",
         "__bit_reference": "c",
         "ios": "c",
-        "chrono": "c"
+        "chrono": "c",
+        "variant": "cpp"
     }
 }
