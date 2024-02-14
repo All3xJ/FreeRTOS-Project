@@ -336,7 +336,7 @@ static void vCommandlineTask(void *pvParameters) {
 		printf("9 - Generate or regenerate the tasks\n\r");
         printf("1 - FCFS\n\r");
         printf("2 - SJF\n\r");
-		printf("2 - LJF\n\r");
+		printf("3 - LJF\n\r");
         printf("0 - to exit\n\r");
 
         while (index < NORMALBUFLEN - 1) {
