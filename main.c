@@ -460,10 +460,9 @@ void ComputingTask(void *pvParameters) {
         res *= i;
     }
 
-    TickType_t end = xTaskGetTickCount() - start;
-	printf("%s end time: %u\r\n", taskName, (int)xTaskGetTickCount());
-    printf("%s elapsed time: %u\r\n", taskName, (int)end);
-    // append(finishedTasks, numberOfTasks, end);
+    TickType_t end = xTaskGetTickCount();
+	printf("%s end time: %d\r\n", taskName, (int)end);
+    printf("%s elapsed time: %d\r\n", taskName, (int)(end - start));
 	insertFinished(taskName, (int)end);
     vTaskDelete(NULL); // delete the task before returning
 }
@@ -486,7 +485,6 @@ void ComputingTaskTest(void *pvParameters) {
     TickType_t end = xTaskGetTickCount() - start;
 	printf("%s end time: %u\r\n", taskName, (int)xTaskGetTickCount());
     printf("%s elapsed time: %u\r\n", taskName, (int)end);
-    // append(finishedTasks, numberOfTasks, end);
 	insertFinished(taskName, (int)end);
     vTaskDelete(NULL); // delete the task before returning
 }
@@ -550,7 +548,7 @@ void CheckResTasks(void *pvParameters) {
 		char taskName[10];
 		snprintf(taskName, sizeof(taskName), "Task%d", i + 1);
 
-		if (getFinished(taskName) - getStarting(taskName) > tasksDeadlines[i])
+		if ((getFinished(taskName) - getStarting(taskName)) > tasksDeadlines[i])
 		{
 			printf("%s has missed the deadline\r\n", taskName);
 		}
@@ -579,6 +577,6 @@ void doAllSeed(int* arrayTasks, int* arrayDeadlines, int size, unsigned int seed
         arrayTasks[i] = rand_r(&seed) % (1000000 - 10000000 + 1); // Parameters to "play" with to change task durations
     }
 	for (int i = 0; i < size; i++) {
-        arrayDeadlines[i] = rand_r(&seed) % (100 - 1000 + 1); // Parameters to "play" with to change deadlines
+        arrayDeadlines[i] = rand_r(&seed) % (100 - 250 + 1); // Parameters to "play" with to change deadlines
     }
 }
