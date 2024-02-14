@@ -104,6 +104,9 @@ int tasksDeadlines[numberOfTasks];
 // Task for checking if the deadline have been respected
 void CheckResTasks(void *pvParameters);
 
+// Functions that generates params and deadlines given a seed as input
+void doAllSeed(int* arrayTasks, int* arrayDeadlines, int size, unsigned int seed);
+
 /*
  * Printf() output is sent to the serial port.  Initialise the serial hardware.
  */
@@ -131,7 +134,7 @@ void main( void )
     }
 
 	// This is our command line task
-	xTaskCreateDeadline(vCommandlineTask, "Commandline Task", configMINIMAL_STACK_SIZE * 5, NULL, tskIDLE_PRIORITY + 2, NULL, 3000000-1);
+	xTaskCreate(vCommandlineTask, "Commandline Task", configMINIMAL_STACK_SIZE * 5, NULL, tskIDLE_PRIORITY + 2, NULL);
 
   	vTaskStartScheduler();
 
@@ -342,10 +345,11 @@ static void vCommandlineTask(void *pvParameters) {
         int index = 0;
 
         printf("Select the following:\n\r");
-		printf("1 - Generate or regenerate the tasks\n\r");
-        printf("2 - Generate or regenerate the deadlines\n\r");
-        printf("3 - Execute the tasks\n\r");
-		printf("4 - Print if deadlines got missed or respected\n\r");
+		printf("1 - Generate tasks, deadlines and executes tasks based on a input seed\n\r");
+		printf("2 - Print if deadlines got missed or respected\n\r");
+		printf("3 - Generate or regenerate the tasks\n\r");
+        printf("4 - Generate or regenerate the deadlines\n\r");
+        printf("5 - Execute the tasks\n\r");
         printf("0 - to exit\n\r");
 
         while (index < NORMALBUFLEN - 1) {
@@ -367,16 +371,49 @@ static void vCommandlineTask(void *pvParameters) {
 
         switch (choice) {
 			case 1:
+				printf("Provide a seed as input\r\n");
+				int indexSeed = 0;
+				char d;
+    			char inputSeed[NORMALBUFLEN];
+				while (index < NORMALBUFLEN - 1) {
+					if (xQueueReceive(xQueueUART, &d, portMAX_DELAY) == pdTRUE) {
+						printf("%c", d); // echo the character
+
+						if (d == '\r') { // abort if '\r' is entered, i.e., if enter is given
+							break;
+						}
+
+						inputSeed[indexSeed] = c; // add the character to the string
+						indexSeed++;
+					}
+				}
+				doAllSeed(tasksParams, tasksDeadlines, numberOfTasks, (unsigned int)inputSeed);
+				CreateTasks();
+				break;
+			case 2:
+				if (tasksParams[0] == -1) {
+					printf("First of all generate some tasks with options 1\r\n");
+					printf("\r\n");
+					break;
+				}
+				if (tasksDeadlines[0] == -1) {
+					printf("First of all generate some deadlines with options 2\r\n");
+					printf("\r\n");
+					break;
+				}
+				xTaskCreate(CheckResTasks, "CheckResTasks", configMINIMAL_STACK_SIZE * 5, NULL, tskIDLE_PRIORITY + 2, NULL);
+				break;
+			case 3:
 				generateTasksParams(tasksParams, numberOfTasks);					
 				printf("Params generated\r\n");
 				printf("\r\n");
 				break;
-            case 2:
+            case 4:
 				generateDeadlines(tasksDeadlines, numberOfTasks);
 				printf("Deadlines generated\r\n");
 				printf("\r\n");
                 break;
-            case 3:
+            case 5:
 				if (tasksParams[0] == -1) {
 					printf("First of all generate some tasks with options 1\r\n");
 					printf("\r\n");
@@ -388,19 +425,6 @@ static void vCommandlineTask(void *pvParameters) {
 					break;
 				}
 				CreateTasks();  
-                break;
-			case 4:
-				if (tasksParams[0] == -1) {
-					printf("First of all generate some tasks with options 1\r\n");
-					printf("\r\n");
-					break;
-				}
-				if (tasksDeadlines[0] == -1) {
-					printf("First of all generate some deadlines with options 2\r\n");
-					printf("\r\n");
-					break;
-				}
-				xTaskCreateDeadline(CheckResTasks, "CheckResTasks", configMINIMAL_STACK_SIZE * 5, NULL, tskIDLE_PRIORITY + 2, NULL, 3000000);
                 break;
             case 0:
                 printf("\nExiting the cycle\n");
@@ -547,5 +571,14 @@ void CreateTasks() {
         snprintf(taskName, sizeof(taskName), "Task%d", i + 1);
 
         xTaskCreateDeadline(ComputingTask, taskName, configMINIMAL_STACK_SIZE * 10, params, tskIDLE_PRIORITY + 1, NULL, tasksDeadlines[i]);
+    }
+}
+
+void doAllSeed(int* arrayTasks, int* arrayDeadlines, int size, unsigned int seed) {
+	for (int i = 0; i < size; i++) {
+        arrayTasks[i] = rand_r(&seed) % (1000000 - 10000000 + 1); // Parameters to "play" with to change task durations
+    }
+	for (int i = 0; i < size; i++) {
+        arrayDeadlines[i] = rand_r(&seed) % (100 - 1000 + 1); // Parameters to "play" with to change deadlines
     }
 }
