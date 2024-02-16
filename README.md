@@ -46,16 +46,26 @@ void main(void) {
 #Producer Task
 #The 'producerTask' function writes data to the shared buffer.
 
-static void producerTask(void *pvParameters) {
-    // Producer task code...
+static void producerTask(void *pvParameters)
+{
+	//arv val base on the parameter passed to the task
 
-    buffer = argVal;
-    printf("I'm the producer, writing %d on the buffer.\n", argVal);
+	for (int i = 1; i <= argVal; i++)
+	{
+		xSemaphoreTake(xMutex, portMAX_DELAY);
+		{
+			vTaskDelay(1000);
+			buffer = i;
+			printf("im the producer, writing %d on the buffer \n\r", buffer);
+		}
+		xSemaphoreGive(xMutex);
+		vTaskDelay(3000);
+	}
 
-    // More producer task code...
-
-    vTaskDelete(NULL);
+	vTaskDelete(consumerHandle);
+	vTaskDelete(NULL);
 }
+
 
 
 # Consumer Task
