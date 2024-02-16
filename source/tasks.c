@@ -354,7 +354,9 @@ portDONT_DISCARD PRIVILEGED_DATA TCB_t * volatile pxCurrentTCB = NULL;
  * doing so breaks some kernel aware debuggers and debuggers that rely on removing
  * the static qualifier. */
 PRIVILEGED_DATA static List_t pxReadyTasksLists[ configMAX_PRIORITIES ]; /*< Prioritised ready tasks. */
-PRIVILEGED_DATA static List_t xReadyTasksListEDF;                        /* new list holding tasks with deadline */
+#if configUSE_EDF_SCHEDULER == 1
+    PRIVILEGED_DATA static List_t xReadyTasksListEDF;                        /* new list holding tasks with deadline */
+#endif
 PRIVILEGED_DATA static List_t xDelayedTaskList1;                         /*< Delayed tasks. */
 PRIVILEGED_DATA static List_t xDelayedTaskList2;                         /*< Delayed tasks (two lists are used - one for delays that have overflowed the current tick count. */
 PRIVILEGED_DATA static List_t * volatile pxDelayedTaskList;              /*< Points to the delayed task list currently being used. */
@@ -1078,14 +1080,27 @@ static void prvAddNewTaskToReadyList( TCB_t * pxNewTCB )
              * so far. */
             if( xSchedulerRunning == pdFALSE )
             {
-                if( pxCurrentTCB->uxPriority <= pxNewTCB->uxPriority )
+                #if (configUSE_EDF_SCHEDULER == 1)
                 {
-                    pxCurrentTCB = pxNewTCB;
+                    if( pxCurrentTCB->xStateListItem.xItemValue > pxNewTCB->xStateListItem.xItemValue )
+                    {
+                        taskYIELD_IF_USING_PREEMPTION();
+                    }
+                    else
+                    {
+                        mtCOVERAGE_TEST_MARKER();
+                    }
                 }
-                else
-                {
-                    mtCOVERAGE_TEST_MARKER();
-                }
+                #else
+                    if( pxCurrentTCB->uxPriority <= pxNewTCB->uxPriority )
+                    {
+                        pxCurrentTCB = pxNewTCB;
+                    }
+                    else
+                    {
+                        mtCOVERAGE_TEST_MARKER();
+                    }
+                #endif
             }
             else
             {
@@ -2884,7 +2899,7 @@ BaseType_t xTaskIncrementTick( void )
 
                         #if (configUSE_EDF_SCHEDULER == 1)
                         {
-                            if( pxTCB->xStateListItem.xItemValue < pxCurrentTCB->xStateListItem.xItemValue )
+                            if( pxTCB->xStateListItem.xItemValue < pxCurrentTCB->xStateListItem.xItemValue ) // If the unblocked task has an earlier deadline, context switch happens 
                             {
                                 xSwitchRequired = pdTRUE;
                             }
@@ -3138,7 +3153,7 @@ void vTaskSwitchContext( void )
         /* Select a new task to run using either the generic C or port
          * optimised asm code. */
 
-            #if (configUSE_EDF_SCHEDULER == 0)
+        #if (configUSE_EDF_SCHEDULER == 0)
         {
             taskSELECT_HIGHEST_PRIORITY_TASK();
         }
@@ -5613,7 +5628,6 @@ BaseType_t xTaskCreateDeadline( TaskFunction_t pxTaskCode,
             #endif /* tskSTATIC_AND_DYNAMIC_ALLOCATION_POSSIBLE */
 
             prvInitialiseNewTask( pxTaskCode, pcName, ( uint32_t ) usStackDepth, pvParameters, uxPriority, pxCreatedTask, pxNewTCB, NULL );
-            pxNewTCB->xTaskDeadline = deadline; // Storing the deadline in the TCB
             listSET_LIST_ITEM_VALUE( &( ( pxNewTCB )->xStateListItem ), ( pxNewTCB )->xTaskDeadline + xTickCount); // Set xValue of xStateListItem for the given TCB to the value of the deadline
             insertStarting(pcName, (int)xTaskGetTickCount());
             prvAddNewTaskToReadyList( pxNewTCB );

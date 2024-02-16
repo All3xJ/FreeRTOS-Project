@@ -90,7 +90,7 @@ void CreateTasks();
 // Seed for randomness
 unsigned int seed = 0;
 
-#define numberOfTasks 9 // Change this value to change the numbers of tasks to run
+#define numberOfTasks 10 // Change this value to change the numbers of tasks to run
 
 // Array used to store the time each task took to complete, first value, first task to finish
 // int finishedTasks[numberOfTasks]; // replaced by dict
@@ -530,7 +530,7 @@ void generateTasksParams(int* array, int size) {
 	seed = (unsigned int)xTaskGetTickCount();
 
     for (int i = 0; i < size; i++) {
-        array[i] = rand_r(&seed) % (1000000 - 10000000 + 1); // Parameters to "play" with to change task durations
+        array[i] = 1000000 + rand_r(&seed) % (10000000 - 1000000 + 1); // Parameters to "play" with to change task durations
     }
 }
 
@@ -538,7 +538,7 @@ void generateDeadlines(int* array, int size) {
 	seed = (unsigned int)xTaskGetTickCount();
 
     for (int i = 0; i < size; i++) {
-        array[i] = rand_r(&seed) % (100 - 1000 + 1); // Parameters to "play" with to change deadlines
+        array[i] = 200 + rand_r(&seed) % (500 - 200 + 1); // Parameters to "play" with to change deadlines
     }
 }
 
@@ -547,6 +547,8 @@ void CheckResTasks(void *pvParameters) {
 	for (int i = 0; i < numberOfTasks; ++i) {
 		char taskName[10];
 		snprintf(taskName, sizeof(taskName), "Task%d", i + 1);
+
+		// printf("%s, %d, %d, %d\r\n", taskName, getFinished(taskName), getStarting(taskName), tasksDeadlines[i]);
 
 		if ((getFinished(taskName) - getStarting(taskName)) > tasksDeadlines[i])
 		{
@@ -574,9 +576,9 @@ void CreateTasks() {
 
 void doAllSeed(int* arrayTasks, int* arrayDeadlines, int size, unsigned int seed) {
 	for (int i = 0; i < size; i++) {
-        arrayTasks[i] = rand_r(&seed) % (1000000 - 10000000 + 1); // Parameters to "play" with to change task durations
+        arrayTasks[i] = 1000000 + rand_r(&seed) % (10000000 - 1000000 + 1); // Parameters to "play" with to change task durations
     }
 	for (int i = 0; i < size; i++) {
-        arrayDeadlines[i] = rand_r(&seed) % (100 - 250 + 1); // Parameters to "play" with to change deadlines
+        arrayDeadlines[i] = 200 + rand_r(&seed) % (500 - 200 + 1); // Parameters to "play" with to change deadlines
     }
 }
