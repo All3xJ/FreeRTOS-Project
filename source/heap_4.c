@@ -344,18 +344,20 @@ static void prvInsertBlockIntoFreeList(BlockLink_t *pxBlockToInsert) PRIVILEGED_
     BlockLink_t *pxIterator, *pxPrevBlock = NULL;
     size_t xRequiredSize = pxBlockToInsert->xBlockSize;
 
-    // Find the worst-fitting block (largest free size that can fit the allocation)
+    // Find the worst-fit block (largest free size that can contain the allocation)
     for (pxIterator = &xStart; pxIterator->pxNextFreeBlock != pxEnd; pxIterator = pxIterator->pxNextFreeBlock) {
         if (pxIterator->pxNextFreeBlock->xBlockSize >= xRequiredSize) {
             pxPrevBlock = pxIterator;
         } else {
-            break; // No larger blocks found, insert here
+            break; 
         }
     }
 
-    // Merge with previous block if possible
+    // Merge with the previous block if possible
     if (pxPrevBlock != NULL && (pxPrevBlock->pxNextFreeBlock->xBlockSize + xRequiredSize) > heapMINIMUM_BLOCK_SIZE) {
-        pxPrevBlock->pxNextFreeBlock->xBlockSize += xRequiredSize;
+        pxPrevBlock->pxNextFreeBlock->xBlockSize -= xRequiredSize;
+
+        // Update the pointer of the block to be inserted to point to the newly merged block
         pxBlockToInsert = pxPrevBlock->pxNextFreeBlock;
     } else {
         // Insert after the previous block or at the beginning
@@ -367,26 +369,18 @@ static void prvInsertBlockIntoFreeList(BlockLink_t *pxBlockToInsert) PRIVILEGED_
         }
     }
 
-    // Merge with next block if possible (after potential split)
+    // Merge with the next block if possible (after potential splitting)
     if (pxBlockToInsert->pxNextFreeBlock != pxEnd &&
         (pxBlockToInsert->xBlockSize + pxBlockToInsert->pxNextFreeBlock->xBlockSize) > heapMINIMUM_BLOCK_SIZE) {
-        pxBlockToInsert->xBlockSize += pxBlockToInsert->pxNextFreeBlock->xBlockSize;
-        pxBlockToInsert->pxNextFreeBlock = pxBlockToInsert->pxNextFreeBlock->pxNextFreeBlock;
+        BlockLink_t *pxNextBlock = pxBlockToInsert->pxNextFreeBlock;
+        pxBlockToInsert->xBlockSize += pxNextBlock->xBlockSize;
+        pxBlockToInsert->pxNextFreeBlock = pxNextBlock->pxNextFreeBlock;
     }
 
-    // Maintain descending order of free block sizes
-    while (pxBlockToInsert->pxNextFreeBlock && pxBlockToInsert->pxNextFreeBlock->xBlockSize > pxBlockToInsert->xBlockSize) {
-        BlockLink_t *temp = pxBlockToInsert->pxNextFreeBlock;
-        pxBlockToInsert->pxNextFreeBlock = temp->pxNextFreeBlock;
-        temp->pxNextFreeBlock = pxBlockToInsert;
-        if (pxBlockToInsert == &xStart) {
-            xStart.pxNextFreeBlock = temp;
-        } else {
-            pxPrevBlock->pxNextFreeBlock = temp;
-        }
-        pxPrevBlock = temp;
-    }
+
 }
+
+
 
 
 /*-----------------------------------------------------------*/
