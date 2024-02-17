@@ -120,9 +120,9 @@ void vLedTask(void *pvParameters)
 ```
 
 ### LED initialization and functions used to turn on and off the LEDs
-In order to use and manipulate the LEDs on this board, we use LED_REGISTER (reference al readme di Genova)
+The procedure to use and control the LEDs is already explained at the end of the following read me file https://baltig.polito.it/caos2023/group36/-/blob/CORTEX_MPS2-genova/README.md
 
-We use `Switch_On_First_Half_Leds` and `Switch_On_Second_Half_Leds` to turn on the first half or the second half of the LEDs
+Additional functions: we use `Switch_On_First_Half_Leds` and `Switch_On_Second_Half_Leds` to turn on the first half or the second half of the LEDs
 
 `Switch_On_First_Half_Leds` calculates an 8-bit mask with the first 4 bits set to 1 and uses it to turn on only the first half of the LEDs. 
 The mask is then "OR"ed with the `LED_REGISTER``
