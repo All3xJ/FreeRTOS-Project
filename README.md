@@ -1,7 +1,7 @@
 # Repository Introduction
 
 We've organized the repository to have distinct branches for each example or feature implemented. 
-Each branch contains a dedicated readme file, providing a detailed explanation of the specific implementations within that branch. 
+Each branch is accompanied by a dedicated readme file, providing a detailed explanation of the specific implementations within that branch. 
 Refer to each branch's README for a deeper understanding of the contents and functionalities. 
 
 ## Branch Organization
@@ -10,7 +10,11 @@ Refer to each branch's README for a deeper understanding of the contents and fun
 This branch serves as a FreeRTOS Memory WatchDog Example, featuring two tasks dynamically allocating memory. The branch also includes a function designed to handle memory-related events.
 
 ### [cortex_MPS2-genova](https://baltig.polito.it/caos2023/group36/-/blob/CORTEX_MPS2-genova)
-In this branch, several functionalities have been implemented: a command line for writing and reading data through UART, "CPU Usage Statistics" that provide runtime insights, the "Tickless idle mode" designed to minimize power consumption by allowing the board to enter a low-power state during idle periods, and lastly, an additional feature for LED Control.
+In this branch, several functionalities have been implemented: 
+- UART Command Line: a command line for writing and reading data through UART
+- CPU Usage Statistics: provide runtime insights
+- Tickless idle mode: designed to minimize power consumption by allowing the board to enter a low-power state during idle periods, and lastly
+- An additional feature for LED Control.
 
 ### [CORTEX_MPS2-Moscato](https://baltig.polito.it/caos2023/group36/-/tree/CORTEX_MPS2-Moscato)
 In this branch the focus is on the utilization of notifications, which serve as a lightweight inter-task communication mechanism provided by FreeRTOS. Notifications enable tasks to interact with each other without the need for a separate communication object.
