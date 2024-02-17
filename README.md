@@ -7,7 +7,8 @@ Refer to each branch's README for a deeper understanding of the contents and fun
 ## Branch Organization
 
 ### [cortex_MPS2_Sambataro](https://baltig.polito.it/caos2023/group36/-/tree/cortex_MPS2_Sambataro)
-This branch serves as a FreeRTOS Memory WatchDog Example, featuring two tasks dynamically allocating memory. The branch also includes a function designed to handle memory-related events.
+This branch functions as a FreeRTOS Memory Watchdog example, showcasing the implementation of two tasks that dynamically allocate memory. 
+The branch also includes a function designed to handle memory-related events.
 
 ### [cortex_MPS2-genova](https://baltig.polito.it/caos2023/group36/-/blob/CORTEX_MPS2-genova)
 In this branch, several functionalities have been implemented: 
@@ -20,7 +21,8 @@ In this branch, several functionalities have been implemented:
 In this branch the focus is on the utilization of notifications, which serve as a lightweight inter-task communication mechanism provided by FreeRTOS. Notifications enable tasks to interact with each other without the need for a separate communication object.
 
 ### [CORTEX_MPS2-Cornaggia](https://baltig.polito.it/caos2023/group36/-/blob/CORTEX_MPS2-Cornaggia/-branch)
-In this branch a simple example is implemented to showcase the utilization of Event Groups functionality. The primary objective is to demonstrate how Event Groups can be employed for synchronization between tasks, allowing efficient communication and coordination in the FreeRTOS environment.
+In this branch a simple example is implemented to showcase the utilization of Event Groups functionality. 
+The primary objective is to demonstrate how Event Groups can be employed for synchronization between tasks, allowing efficient communication and coordination in the FreeRTOS environment.
 
 
 ### [CORTEX_MPS2_SEMAPHORE_EX](https://baltig.polito.it/caos2023/group36/-/tree/CORTEX_MPS2_SEMAPHORE_EX)
