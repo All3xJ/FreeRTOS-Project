@@ -1,7 +1,7 @@
 # Repository Introduction
 
 We've organized the repository to have distinct branches for each example or feature implemented. 
-Each branch is accompanied by a dedicated readme file, providing a detailed explanation of the specific implementations within that branch. 
+In each branch there is a dedicated readme file, providing a detailed explanation of the specific implementations within that branch. 
 Refer to each branch's README for a deeper understanding of the contents and functionalities. 
 
 ## Branch Organization
