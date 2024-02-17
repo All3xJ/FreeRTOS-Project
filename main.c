@@ -427,7 +427,7 @@ void vTask2( void *pvParameters )
 
 void vTask3( void *pvParameters )
 {
-    TickType_t xStartTime = xTaskGetTickCount(); // Ottiene il tempo di avvio del terzo task
+    TickType_t xStartTime = xTaskGetTickCount(); 
     
     // Avvia i primi due task
     xTaskCreate( vTask1, "Task 1", configMINIMAL_STACK_SIZE*2, NULL, 6, NULL );
@@ -435,12 +435,12 @@ void vTask3( void *pvParameters )
     void *allocatedMemoryTask3 =pvPortMalloc(4000);
     for( ;; )
     {
-        // Calcola il tempo trascorso dall'avvio del terzo task
+        
         TickType_t xCurrentTime = xTaskGetTickCount();
         TickType_t xElapsedTime = xCurrentTime - xStartTime;
         
-        // Cancella il terzo task dopo un certo intervallo di tempo
-        if( xElapsedTime >= pdMS_TO_TICKS(5000) ) // Cancella dopo 5 secondi
+        
+        if( xElapsedTime >= pdMS_TO_TICKS(5000) ) 
         {
             vPrintString( "Task 3 is terminating\r\n" );
 			vPortFree(allocatedMemoryTask3);
@@ -454,6 +454,6 @@ void vTask3( void *pvParameters )
 		
         
         
-        vTaskDelay( pdMS_TO_TICKS(1000) ); // Attende 1 secondo prima di controllare di nuovo
+        vTaskDelay( pdMS_TO_TICKS(1000) ); 
     }
 }
