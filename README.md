@@ -7,7 +7,7 @@ Refer to each branch's README for a deeper understanding of the contents and fun
 ## Branch Organization
 
 ### [cortex_MPS2_Sambataro](https://baltig.polito.it/caos2023/group36/-/tree/cortex_MPS2_Sambataro)
-This branch functions as a FreeRTOS Memory Watchdog example, showcasing the implementation of two tasks that dynamically allocate memory. 
+This branch contains FreeRTOS Memory Watchdog example, showcasing the implementation of two tasks that dynamically allocate memory. 
 The branch also includes a function designed to handle memory-related events.
 
 ### [cortex_MPS2-genova](https://baltig.polito.it/caos2023/group36/-/blob/CORTEX_MPS2-genova)
