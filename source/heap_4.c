@@ -353,7 +353,7 @@ static void prvInsertBlockIntoFreeList(BlockLink_t *pxBlockToInsert) PRIVILEGED_
     BlockLink_t *pxIterator, *pxPrevBlock = NULL;
     size_t xRequiredSize = pxBlockToInsert->xBlockSize;
 
-    // Find the worst-fit block (largest free size that can contain the allocation)
+    // Find the largest free size 
     for (pxIterator = &xStart; pxIterator->pxNextFreeBlock != pxEnd; pxIterator = pxIterator->pxNextFreeBlock) {
         if (pxIterator->pxNextFreeBlock->xBlockSize >= xRequiredSize) {
             pxPrevBlock = pxIterator;
@@ -378,7 +378,7 @@ static void prvInsertBlockIntoFreeList(BlockLink_t *pxBlockToInsert) PRIVILEGED_
         }
     }
 
-    // Merge with the next block if possible (after potential splitting)
+    // Merge with the next block if possible 
     if (pxBlockToInsert->pxNextFreeBlock != pxEnd &&
         (pxBlockToInsert->xBlockSize + pxBlockToInsert->pxNextFreeBlock->xBlockSize) > heapMINIMUM_BLOCK_SIZE) {
         BlockLink_t *pxNextBlock = pxBlockToInsert->pxNextFreeBlock;
