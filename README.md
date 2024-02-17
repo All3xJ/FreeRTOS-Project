@@ -35,8 +35,12 @@ Typically, FreeRTOS employs a First-Come-First-Served (FCFS) algorithm when `con
 ### [CORTEX_MPS2_TASK_SCHEDULING_PREEMPTION](https://baltig.polito.it/caos2023/group36/-/tree/CORTEX_MPS2_TASK_SCHEDULING_PREEMPTION)
 This branch contains the implementation of the Earliest Deadline First (EDF) scheduling algorithm.
 
-### [best-fit_heap4](https://baltig.polito.it/caos2023/group36/-/tree/best-fit_heap4)
-This branch contains the implementation of two algorithms for memory managment: Worst-Fit and Best-Fit.
+### [heap4_best_fit_allocator](https://baltig.polito.it/caos2023/group36/-/tree/heap4_best_fit_allocator)
+This branch contains the implementation of Best-Fit algorithm for memory managment.
+(Our base demo uses the heap_4.c, that implements a First fit algoritm).
+
+### [heap4_worst_fit_allocator](https://baltig.polito.it/caos2023/group36/-/tree/heap4_worst_fit_allocator)
+This branch contains the implementation of Worst-Fit algorithm for memory managment.
 (Our base demo uses the heap_4.c, that implements a First fit algoritm).
 
 
