@@ -51,7 +51,7 @@ volatile BaseType_t xTaskTerminated = pdFALSE;
 TaskHandle_t xTask2Handle = NULL;
 HeapStats_t HeapStats;
 /*-----------------------------------------------------------*/
-#define MIN_FREE_MEMORY_THRESHOLD 59500
+#define MIN_FREE_MEMORY_THRESHOLD 57500
 volatile uint32_t ulNumActiveTasks = 2;
 void *allocatedMemoryTask1 = NULL;
 void *allocatedMemoryTask2 = NULL;
