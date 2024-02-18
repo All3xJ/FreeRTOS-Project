@@ -47,11 +47,13 @@ void vFullDemoTickHookFunction( void );
 static void prvUARTInit( void );
 void vTask1( void *pvParameters );
 void vTask2( void *pvParameters );
+void vTask3( void *pvParameters );
 volatile BaseType_t xTaskTerminated = pdFALSE;
 TaskHandle_t xTask2Handle = NULL;
+TaskHandle_t xTask3Handle = NULL;
 HeapStats_t HeapStats;
 /*-----------------------------------------------------------*/
-#define MIN_FREE_MEMORY_THRESHOLD 57500
+#define MIN_FREE_MEMORY_THRESHOLD 58000
 volatile uint32_t ulNumActiveTasks = 2;
 void *allocatedMemoryTask1 = NULL;
 void *allocatedMemoryTask2 = NULL;
@@ -115,7 +117,7 @@ int main( void )
 	/* Create the first task at priority 6. The task parameter is not used 
 	and set to NULL. The task handle is also not used so is also set to NULL. */
 	
-	xTaskCreate( vTask1, "Task 1",configMINIMAL_STACK_SIZE*2, NULL, 6, NULL);
+	//xTaskCreate( vTask1, "Task 1",configMINIMAL_STACK_SIZE*2, NULL, 6, NULL);
 	
 	/* The task is created at priority 6 ______^. */
 
@@ -123,9 +125,11 @@ int main( void )
 	given to Task 1. Again the task parameter is not used so is set to NULL -
 	BUT this time the task handle is required so the address of xTask2Handle
 	is passed in the last parameter. */
-	xTaskCreate( vTask2, "Task 2", configMINIMAL_STACK_SIZE*2, NULL, 5, &xTask2Handle );
+	//xTaskCreate( vTask2, "Task 2", configMINIMAL_STACK_SIZE*2, NULL, 5, &xTask2Handle );
 	/* The task handle is the last parameter _____^^^^^^^^^^^^^ */
 	
+
+	xTaskCreate( vTask3, "Task 3", configMINIMAL_STACK_SIZE*2, NULL, 4, &xTask3Handle );
 
 
 	/* Start the scheduler so the tasks start executing. */
@@ -421,3 +425,35 @@ void vTask2( void *pvParameters )
 	}
 }
 
+void vTask3( void *pvParameters )
+{
+    TickType_t xStartTime = xTaskGetTickCount(); 
+    
+   
+    xTaskCreate( vTask1, "Task 1", configMINIMAL_STACK_SIZE*2, NULL, 6, NULL );
+    xTaskCreate( vTask2, "Task 2", configMINIMAL_STACK_SIZE*2, NULL, 5, &xTask2Handle );
+    void *allocatedMemoryTask3 =pvPortMalloc(4000);
+    for( ;; )
+    {
+       
+        TickType_t xCurrentTime = xTaskGetTickCount();
+        TickType_t xElapsedTime = xCurrentTime - xStartTime;
+        
+        
+        if( xElapsedTime >= pdMS_TO_TICKS(5000) ) 
+        {
+            vPrintString( "Task 3 is terminating\r\n" );
+			vPortFree(allocatedMemoryTask3);
+
+			vPortGetHeapStats(&HeapStats );
+            printHeapStats( &HeapStats, "Task3" );
+            vTaskDelete(xTask3Handle);
+			
+        }
+        
+		
+        
+        
+        vTaskDelay( pdMS_TO_TICKS(1000) ); 
+    }
+}
