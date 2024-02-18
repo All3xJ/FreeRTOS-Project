@@ -443,10 +443,11 @@ void vTask3( void *pvParameters )
         if( xElapsedTime >= pdMS_TO_TICKS(5000) ) 
         {
             vPrintString( "Task 3 is terminating\r\n" );
-			vPortFree(allocatedMemoryTask3);
-
 			vPortGetHeapStats(&HeapStats );
             printHeapStats( &HeapStats, "Task3" );
+			vPortFree(allocatedMemoryTask3);
+
+			
             vTaskDelete(xTask3Handle);
 			
         }
