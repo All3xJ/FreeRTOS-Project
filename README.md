@@ -33,7 +33,7 @@ This branch contains the implementation of two different non-preemptive scheduli
 Typically, FreeRTOS employs a First-Come-First-Served (FCFS) algorithm when `configUSE_PREEMPTION` is set to 0.
 
 ### [CORTEX_MPS2_TASK_SCHEDULING_PREEMPTION](https://baltig.polito.it/caos2023/group36/-/tree/CORTEX_MPS2_TASK_SCHEDULING_PREEMPTION)
-This branch contains the implementation of the Earliest Deadline First (EDF) scheduling algorithm.
+This branch contains the implementation of the Earliest Deadline First (EDF) scheduling algorithm. Typically, FreeRTOS use Round Robin with priority algorithm when `configUSE_PREEMPTION` is set to 1.
 
 ### [heap4_best_fit_allocator](https://baltig.polito.it/caos2023/group36/-/tree/heap4_best_fit_allocator)
 This branch contains the implementation of Best-Fit algorithm for memory managment.
