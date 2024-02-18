@@ -81,5 +81,7 @@ static void consumerTask(void *pvParameters) {
     vTaskDelete(NULL);
 }
 ```
+## Example image
+![Prod_cons.png](./Prod_cons.png)
 
 
