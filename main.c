@@ -29,6 +29,7 @@
 #include "task.h"
 #include "queue.h"
 #include <SMM_MPS2.h>
+#include "list.h"
 
 #include "dictionaries.h" // custom lib to implement dictionaries
 
@@ -62,8 +63,6 @@ void UART0RX_Handler(void);
 
 // Task just do some arithmetics calculation, the longer the number passed, the more complex the computation
 void ComputingTask(void *pvParameters);
-
-void ComputingTaskTest(void *pvParameters);
 
 // Function used to append values to an array (last element defined by -1)
 void append(int *array, int size, int newElement);
@@ -106,6 +105,10 @@ void CheckResTasks(void *pvParameters);
 
 // Functions that generates params and deadlines given a seed as input
 void doAllSeed(int* arrayTasks, int* arrayDeadlines, int size, unsigned int seed);
+
+void ContextSwtichTask(void *pvParameters);
+
+void ComputingTaskContextSwitch(void *pvParameters);
 
 /*
  * Printf() output is sent to the serial port.  Initialise the serial hardware.
@@ -350,6 +353,7 @@ static void vCommandlineTask(void *pvParameters) {
 		printf("3 - Generate or regenerate the tasks\n\r");
         printf("4 - Generate or regenerate the deadlines\n\r");
         printf("5 - Execute the tasks\n\r");
+		printf("6 - Context switch late task test\n\r");
         printf("0 - to exit\n\r");
 
         while (index < NORMALBUFLEN - 1) {
@@ -368,6 +372,9 @@ static void vCommandlineTask(void *pvParameters) {
         inputString[index] = '\0'; // add string terminator
 
         int choice = atoi(inputString); // convert string to integer
+
+		int *params = (int *)pvPortMalloc(sizeof(int));
+		params[0] = 10000000;
 
         switch (choice) {
 			case 1:
@@ -426,6 +433,10 @@ static void vCommandlineTask(void *pvParameters) {
 				}
 				CreateTasks();  
                 break;
+			case 6:
+				printf("Scheduling task with 200 ticks as deadline\r\n");				
+				xTaskCreateDeadline(ComputingTaskContextSwitch, "StartingT", configMINIMAL_STACK_SIZE * 10, params, tskIDLE_PRIORITY + 1, NULL, 200);
+				break;
             case 0:
                 printf("\nExiting the cycle\n");
                 vTaskDelete(NULL); // delete the task before returning
@@ -463,28 +474,6 @@ void ComputingTask(void *pvParameters) {
     TickType_t end = xTaskGetTickCount();
 	printf("%s end time: %d\r\n", taskName, (int)end);
     printf("%s elapsed time: %d\r\n", taskName, (int)(end - start));
-	insertFinished(taskName, (int)end);
-    vTaskDelete(NULL); // delete the task before returning
-}
-
-void ComputingTaskTest(void *pvParameters) {
-    TickType_t start = xTaskGetTickCount();
-    int n = *((int*)pvParameters);
-	const char *taskName = pcTaskGetName(NULL);
-	printf("%s start time: %u\r\n", taskName, (int)start);
-    int res = 1;
-
-	int *params4 = (int *)pvPortMalloc(sizeof(int));
-	params4[0] = 10000000;
-	xTaskCreateDeadline(ComputingTask, "Task 4", configMINIMAL_STACK_SIZE * 5, params4, tskIDLE_PRIORITY + 2, NULL, 10);
-
-    for (int i = 1; i <= n; ++i) {
-        res *= i;
-    }
-
-    TickType_t end = xTaskGetTickCount() - start;
-	printf("%s end time: %u\r\n", taskName, (int)xTaskGetTickCount());
-    printf("%s elapsed time: %u\r\n", taskName, (int)end);
 	insertFinished(taskName, (int)end);
     vTaskDelete(NULL); // delete the task before returning
 }
@@ -578,7 +567,48 @@ void doAllSeed(int* arrayTasks, int* arrayDeadlines, int size, unsigned int seed
 	for (int i = 0; i < size; i++) {
         arrayTasks[i] = 1000000 + rand_r(&seed) % (10000000 - 1000000 + 1); // Parameters to "play" with to change task durations
     }
+	int sum = 0;
 	for (int i = 0; i < size; i++) {
         arrayDeadlines[i] = 200 + rand_r(&seed) % (500 - 200 + 1); // Parameters to "play" with to change deadlines
+		sum+=arrayDeadlines[i];
+		// printf("%d\r\n", sum);
     }
+}
+
+void ContextSwtichTask(void *pvParameters) {
+	(void)pvParameters;
+	const char *taskName = pcTaskGetName(NULL);
+	printf("Context switch happend in %s ticks as deadline\r\n", taskName);
+	vTaskDelete(NULL);
+}
+
+void ComputingTaskContextSwitch(void *pvParameters) {
+    TickType_t start = xTaskGetTickCount();
+    int n = *((int*)pvParameters);
+	const char *taskName = pcTaskGetName(NULL);
+	printf("%s start time: %u\r\n", taskName, (int)start);
+    int res = 1;
+
+	for (int i = 1; i <= 10000000; ++i) {
+        res *= i;
+    }
+
+	printf("After some computation, current task deadline: %d\r\n",  200 + (int)start - (int)xTaskGetTickCount());
+
+	int *params = (int *)pvPortMalloc(sizeof(int));
+	params[0] = 10000000;
+	printf("Scheduling task with 150 ticks as deadline\r\n");
+	xTaskCreateDeadline(ContextSwtichTask, "Task - 150", configMINIMAL_STACK_SIZE * 5, params, tskIDLE_PRIORITY + 2, NULL, 150);
+	printf("Scheduling task with 10 ticks as deadline\r\n");
+	xTaskCreateDeadline(ContextSwtichTask, "Task - 10", configMINIMAL_STACK_SIZE * 5, params, tskIDLE_PRIORITY + 2, NULL, 10);
+
+    for (int i = 1; i <= n; ++i) {
+        res *= i;
+    }
+
+    TickType_t end = xTaskGetTickCount() - start;
+	printf("%s end time: %u\r\n", taskName, (int)xTaskGetTickCount());
+    printf("%s elapsed time: %u\r\n", taskName, (int)end);
+	insertFinished(taskName, (int)end);
+    vTaskDelete(NULL); // delete the task before returning
 }
