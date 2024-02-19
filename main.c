@@ -120,8 +120,8 @@ void ComputingTaskPeriodic1(void *pvParameters);
 
 void ComputingTaskPeriodic2(void *pvParameters);
 
-int p1 = 280;
-int p2 = 360;
+int p1 = 250;
+int p2 = 310;
 
 int resFlag = 0;
 
