@@ -138,7 +138,7 @@ PRIVILEGED_DATA static size_t xNumberOfSuccessfulFrees = 0;
 
 
 
-#define MIN_FREE_MEMORY_THRESHOLD 30000
+#define MIN_FREE_MEMORY_THRESHOLD 40000
 
 
 

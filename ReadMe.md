@@ -1,5 +1,5 @@
 # Worst-fit allocator
-The "Worst-fit" is a memory allocation algorithm that aims to assign a memory block to the current request by selecting the largest available block.
+The "Worst-fit" is a memory allocation algorithm that aims to assign a memory block to the current request by selecting the largest available block. This code implements also coalescing.
 
 In this implementation, we started with the codebase for the best-fit strategy. By understanding the nature of the worst-fit strategy as its specular counterpart, we made specific modifications to adapt the code accordingly. It was necessary to modify both the **pvPortMalloc** and the **prvInsertBlockIntoFreeList** functions.
 
