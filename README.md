@@ -120,6 +120,31 @@ With this settings we obtains the following results (Respected deadlines - Misse
 With this settings we can see that EDF scheduling manages to respect all the deadlines, while the RR algorithm utilized by FreeRTOS misses 2-3 deadlines out of 10 tasks.
 This data is extermly teoric as we have a lot of parameters that could be changed to generate different results, the real performance will change based on the context of real program, but we can still observe an approximation of the improvements.
 
-### 2.
+### 2. Context switch when a task with earlierd deadline arrives
 
-# WIP
+This example can be selected with the number 6 of the command line.
+
+In this example we schedule a task that has a deadline of 200 ticks, this task will schedules two other task, one with a deadline of 150 and another one with a deadline of 10 and we observe how context switch happens.
+
+Before scheduling this two task, our starting task will spend sime time doing random computation, after that it will print it's current deadline and then it will schedule the two taks: 
+```
+After some computation, current task deadline: 118
+Scheduling task with 150 ticks as deadline
+Scheduling task with 10 ticks as deadline
+```
+
+As we can expected context switch happens on the task with 10 edf, then on the starting task and last the tastk with a deadline of 150.
+
+This particular set of task has been choosen to showcase the fact that the deadlines that get confronted are not the starting ones (200 vs 150) but the current ones (118 vs 150).
+
+### 3. Periodic task
+
+This example can be selected with the number 7 of the command line and then verified with the number 2.
+
+Two task are created with the following parameters (we have estimated C in ticks after multiple running of the code):
+
+| Task | C | T |
+|:----:|:----:|:----:|
+| Task1 | 86 | 180 |
+| Task2 | 168 | 260 |
+
