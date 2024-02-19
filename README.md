@@ -145,14 +145,14 @@ Two task are created with the following parameters (we have estimated C in ticks
 
 | Task | C | T |
 |:----:|:----:|:----:|
-| Task1 | 95 | 240 |
-| Task2 | 180 | 330 |
+| Task1 | 95 | 280 |
+| Task2 | 180 | 360 |
 
 We can see that this set of task is feasable:
 
-95/240 = 0.4
-180/330 =  0.55
+95/280 = 0.34
+180/360 =  0.50
 
-The sum 0.95 is less or equal than 1
+The sum 0.84 is less or equal than 1
 
 Running the code we can observe that the scheduler has to context switch between the task to not miss their deadlines.

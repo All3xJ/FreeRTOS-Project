@@ -120,8 +120,8 @@ void ComputingTaskPeriodic1(void *pvParameters);
 
 void ComputingTaskPeriodic2(void *pvParameters);
 
-int p1 = 240;
-int p2 = 330;
+int p1 = 280;
+int p2 = 360;
 
 int resFlag = 0;
 
@@ -471,7 +471,7 @@ static void vCommandlineTask(void *pvParameters) {
             default:
                 printf("\nWrong selection\n");
         }
-		vTaskDelay(2200);
+		vTaskDelay(2500);
     }
 }
 
