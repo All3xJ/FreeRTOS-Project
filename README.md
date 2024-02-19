@@ -156,3 +156,5 @@ We can see that this set of task is feasable:
 The sum 0.96 is less or equal than 1
 
 Running the code we can observe that the scheduler has to context switch between the task to not miss their deadlines.
+
+![alt text](/gannt.jpeg)
