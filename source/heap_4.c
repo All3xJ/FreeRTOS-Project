@@ -437,7 +437,7 @@ static void prvInsertBlockIntoFreeList( BlockLink_t * pxBlockToInsert ) /* PRIVI
     BlockLink_t * pxIterator;
     uint8_t * puc;
 
-    /* Iterate through the list until a block with a larger size is found or the end is reached */
+    /* Iterate through the list until a block with a smaller size is found or the end is reached */
     for( pxIterator = &xStart; pxIterator->pxNextFreeBlock->xBlockSize > pxBlockToInsert->xBlockSize && pxIterator->pxNextFreeBlock != pxEnd; pxIterator = pxIterator->pxNextFreeBlock )
     {
         /* Nothing to do here, just iterate to the right position. */
