@@ -452,53 +452,53 @@ static void prvInsertBlockIntoFreeList( BlockLink_t * pxBlockToInsert ) /* PRIVI
         /* Nothing to do here, just iterate to the right position. */
     }
 
-    /* Merge blocks if possible */
-    puc = ( uint8_t * ) pxIterator;
+    // /* Merge blocks if possible */
+    // puc = ( uint8_t * ) pxIterator;
 
-    if( ( puc + pxIterator->xBlockSize ) == ( uint8_t * ) pxBlockToInsert )
-    {
-        pxIterator->xBlockSize += pxBlockToInsert->xBlockSize;
-        pxBlockToInsert = pxIterator;
-    }
-    else
-    {
-        mtCOVERAGE_TEST_MARKER();
-    }
+    // if( ( puc + pxIterator->xBlockSize ) == ( uint8_t * ) pxBlockToInsert )
+    // {
+    //     pxIterator->xBlockSize += pxBlockToInsert->xBlockSize;
+    //     pxBlockToInsert = pxIterator;
+    // }
+    // else
+    // {
+    //     mtCOVERAGE_TEST_MARKER();
+    // }
 
-    puc = ( uint8_t * ) pxBlockToInsert;
+    // puc = ( uint8_t * ) pxBlockToInsert;
 
-    if( ( puc + pxBlockToInsert->xBlockSize ) == ( uint8_t * ) pxIterator->pxNextFreeBlock )
-    {
-        if( pxIterator->pxNextFreeBlock != pxEnd )
-        {
-            /* One big block from the two blocks. */
-            //pxBlockToInsert->xBlockSize += pxIterator->pxNextFreeBlock->xBlockSize;      // here is the bug after some allocations and disallocations it will execute and will place the wrong size.
-            pxBlockToInsert->pxNextFreeBlock = pxIterator->pxNextFreeBlock->pxNextFreeBlock;
-        }
-        else
-        {
-            pxBlockToInsert->pxNextFreeBlock = pxEnd;
-        }
-    }
-    else
-    {
-        pxBlockToInsert->pxNextFreeBlock = pxIterator->pxNextFreeBlock;
-    }
+    // if( ( puc + pxBlockToInsert->xBlockSize ) == ( uint8_t * ) pxIterator->pxNextFreeBlock )
+    // {
+    //     if( pxIterator->pxNextFreeBlock != pxEnd )
+    //     {
+    //         /* One big block from the two blocks. */
+    //         //pxBlockToInsert->xBlockSize += pxIterator->pxNextFreeBlock->xBlockSize;      // here is the bug after some allocations and disallocations it will execute and will place the wrong size.
+    //         pxBlockToInsert->pxNextFreeBlock = pxIterator->pxNextFreeBlock->pxNextFreeBlock;
+    //     }
+    //     else
+    //     {
+    //         pxBlockToInsert->pxNextFreeBlock = pxEnd;
+    //     }
+    // }
+    // else
+    // {
+    //     pxBlockToInsert->pxNextFreeBlock = pxIterator->pxNextFreeBlock;
+    // }
 
     /* Insert the block into the correct position */
     /* If the block being inserted plugged a gab, so was merged with the block
      * before and the block after, then it's pxNextFreeBlock pointer will have
      * already been set, and should not be set here as that would make it point
      * to itself. */
-    if( pxIterator != pxBlockToInsert )
-    {
+    // if( pxIterator != pxBlockToInsert )
+    // {
     pxBlockToInsert->pxNextFreeBlock = pxIterator->pxNextFreeBlock;
     pxIterator->pxNextFreeBlock = pxBlockToInsert;
-    }
-    else
-    {
-        mtCOVERAGE_TEST_MARKER();
-    }
+    // }
+    // else
+    // {
+    //     mtCOVERAGE_TEST_MARKER();
+    // }
 }
 
 /*-----------------------------------------------------------*/
