@@ -20,6 +20,7 @@
         "__bit_reference": "c",
         "ios": "c",
         "chrono": "c",
-        "variant": "cpp"
+        "variant": "cpp",
+        "__locale": "c"
     }
 }

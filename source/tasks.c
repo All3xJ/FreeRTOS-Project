@@ -3164,6 +3164,12 @@ void vTaskSwitchContext( void )
         #endif
 
         // taskSELECT_HIGHEST_PRIORITY_TASK(); /*lint !e9079 void * is used as this macro is used with timers and co-routines too.  Alignment is known to be fine as the type of the pointer stored and retrieved is the same. */
+        if (strcmp(pxCurrentTCB->pcTaskName, "IDLE") != 0 &&
+            strcmp(pxCurrentTCB->pcTaskName, "Tmr Svc") != 0 &&
+            strcmp(pxCurrentTCB->pcTaskName, "Commandline") != 0)
+        {
+            printf("Context switch %s\r\n", pxCurrentTCB->pcTaskName);
+        }
         traceTASK_SWITCHED_IN();
 
         /* After the new task is switched in, update the global errno. */

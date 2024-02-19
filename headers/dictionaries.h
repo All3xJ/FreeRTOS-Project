@@ -6,7 +6,8 @@
 
 #define MAX_SIZE 100 // Maximum number of elements in the map 
 
-extern int size; // size of the maps
+extern int sizeStarting; // size of the maps
+extern int sizeFinished; // size of the maps
 
 extern char keysStarting[MAX_SIZE][MAX_SIZE]; // keys for starting time of tasks
 extern int valuesStarting[MAX_SIZE]; // value for starting time of tasks
@@ -37,5 +38,8 @@ int getFinished(const char key[]);
 
 // Function to print the map 
 void printMapFinished();
+
+// Function to get all keys of the finished map
+void getAllKeysFinished(char *result[]);
 
 #endif // DICTIONARIES_H

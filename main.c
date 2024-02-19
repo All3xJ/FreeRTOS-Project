@@ -86,10 +86,14 @@ void generateDeadlines(int* array, int size);
 // Generating tasks with array of params as input
 void CreateTasks();
 
+void CreatePeriodic();
+
 // Seed for randomness
 unsigned int seed = 0;
 
 #define numberOfTasks 10 // Change this value to change the numbers of tasks to run
+
+#define numberOfPeriodicTasks 2
 
 // Array used to store the time each task took to complete, first value, first task to finish
 // int finishedTasks[numberOfTasks]; // replaced by dict
@@ -101,7 +105,7 @@ int tasksParams[numberOfTasks];
 int tasksDeadlines[numberOfTasks];
 
 // Task for checking if the deadline have been respected
-void CheckResTasks(void *pvParameters);
+void CheckResTasks();
 
 // Functions that generates params and deadlines given a seed as input
 void doAllSeed(int* arrayTasks, int* arrayDeadlines, int size, unsigned int seed);
@@ -109,6 +113,19 @@ void doAllSeed(int* arrayTasks, int* arrayDeadlines, int size, unsigned int seed
 void ContextSwtichTask(void *pvParameters);
 
 void ComputingTaskContextSwitch(void *pvParameters);
+
+void feasibility(int* cycles, int* periods, int size);
+
+char* result[numberOfPeriodicTasks*10];
+
+void ComputingTaskPeriodic1(void *pvParameters);
+
+void ComputingTaskPeriodic2(void *pvParameters);
+
+int p1 = 180;
+int p2 = 260;
+
+int resFlag = 0;
 
 /*
  * Printf() output is sent to the serial port.  Initialise the serial hardware.
@@ -137,7 +154,7 @@ void main( void )
     }
 
 	// This is our command line task
-	xTaskCreate(vCommandlineTask, "Commandline Task", configMINIMAL_STACK_SIZE * 5, NULL, tskIDLE_PRIORITY + 2, NULL);
+	xTaskCreate(vCommandlineTask, "Commandline Task", configMINIMAL_STACK_SIZE * 10, NULL, tskIDLE_PRIORITY + 2, NULL);
 
   	vTaskStartScheduler();
 
@@ -354,6 +371,7 @@ static void vCommandlineTask(void *pvParameters) {
         printf("4 - Generate or regenerate the deadlines\n\r");
         printf("5 - Execute the tasks\n\r");
 		printf("6 - Context switch late task test\n\r");
+		printf("7 - Periodic tasks example\r\n");
         printf("0 - to exit\n\r");
 
         while (index < NORMALBUFLEN - 1) {
@@ -373,8 +391,17 @@ static void vCommandlineTask(void *pvParameters) {
 
         int choice = atoi(inputString); // convert string to integer
 
+		// around 70 ticks every 10000000 cycle
+
+		// example 6
 		int *params = (int *)pvPortMalloc(sizeof(int));
 		params[0] = 10000000;
+
+		// example 7
+		int *params2 = (int *)pvPortMalloc(sizeof(int));
+		params2[0] = 10000000;
+		int *params3 = (int *)pvPortMalloc(sizeof(int));
+		params3[0] = 20000000;
 
         switch (choice) {
 			case 1:
@@ -396,19 +423,10 @@ static void vCommandlineTask(void *pvParameters) {
 				}
 				doAllSeed(tasksParams, tasksDeadlines, numberOfTasks, (unsigned int)inputSeed);
 				CreateTasks();
+				resFlag = 2;
 				break;
 			case 2:
-				if (tasksParams[0] == -1) {
-					printf("First of all generate some tasks with options 1\r\n");
-					printf("\r\n");
-					break;
-				}
-				if (tasksDeadlines[0] == -1) {
-					printf("First of all generate some deadlines with options 2\r\n");
-					printf("\r\n");
-					break;
-				}
-				xTaskCreate(CheckResTasks, "CheckResTasks", configMINIMAL_STACK_SIZE * 5, NULL, tskIDLE_PRIORITY + 2, NULL);
+				CheckResTasks();
 				break;
 			case 3:
 				generateTasksParams(tasksParams, numberOfTasks);					
@@ -437,6 +455,11 @@ static void vCommandlineTask(void *pvParameters) {
 				printf("Scheduling task with 200 ticks as deadline\r\n");				
 				xTaskCreateDeadline(ComputingTaskContextSwitch, "StartingT", configMINIMAL_STACK_SIZE * 10, params, tskIDLE_PRIORITY + 1, NULL, 200);
 				break;
+			case 7:
+				xTaskCreateDeadline(ComputingTaskPeriodic1, "T1", configMINIMAL_STACK_SIZE * 10, params2, tskIDLE_PRIORITY + 1, NULL, p1*1);
+				xTaskCreateDeadline(ComputingTaskPeriodic2, "T2", configMINIMAL_STACK_SIZE * 10, params3, tskIDLE_PRIORITY + 1, NULL, p2*1);
+				resFlag = 1;
+				break;
             case 0:
                 printf("\nExiting the cycle\n");
                 vTaskDelete(NULL); // delete the task before returning
@@ -444,17 +467,7 @@ static void vCommandlineTask(void *pvParameters) {
             default:
                 printf("\nWrong selection\n");
         }
-		vTaskDelay(1000);
-		// if (finishedTasks[0] != -1) {
-			// printf("avg time: %u\r\n", avgTime(finishedTasks, numberOfTasks));
-			// printf("avg wait: %u\r\n", avgWait(finishedTasks, numberOfTasks));
-			// printf("avg turn-around time: %u\r\n", avgTurnaroundTime(finishedTasks, numberOfTasks));
-			// printf("\r\n");
-			// Restoring the finishedTasks array to -1 for a further execution
-			// for (int i = 0; i < numberOfTasks; ++i) {
-			// 	finishedTasks[i] = -1;
-			// }
-		// }
+		vTaskDelay(2200);
     }
 }
 
@@ -531,26 +544,6 @@ void generateDeadlines(int* array, int size) {
     }
 }
 
-void CheckResTasks(void *pvParameters) {
-	(void)pvParameters; // Ignores params not utilized alert
-	for (int i = 0; i < numberOfTasks; ++i) {
-		char taskName[10];
-		snprintf(taskName, sizeof(taskName), "Task%d", i + 1);
-
-		// printf("%s, %d, %d, %d\r\n", taskName, getFinished(taskName), getStarting(taskName), tasksDeadlines[i]);
-
-		if ((getFinished(taskName) - getStarting(taskName)) > tasksDeadlines[i])
-		{
-			printf("%s has missed the deadline\r\n", taskName);
-		}
-		else
-		{
-			printf("%s has respected the deadline\r\n", taskName);
-		}
-	}
-    vTaskDelete(NULL); // delete the task before returning
-}
-
 void CreateTasks() {
 	for (int i = 0; i < numberOfTasks; ++i) {
         int *params = (int *)pvPortMalloc(sizeof(int));
@@ -610,5 +603,127 @@ void ComputingTaskContextSwitch(void *pvParameters) {
 	printf("%s end time: %u\r\n", taskName, (int)xTaskGetTickCount());
     printf("%s elapsed time: %u\r\n", taskName, (int)end);
 	insertFinished(taskName, (int)end);
+    vTaskDelete(NULL); // delete the task before returning
+}
+
+void CreatePeriodic() {
+	for (int i = 1; i < 6; i++) {
+		for (int j = 0; j < numberOfPeriodicTasks; j++) {
+			int *params = (int *)pvPortMalloc(sizeof(int));
+        	*params = tasksParams[j];
+
+			char taskName[10];
+        	snprintf(taskName, sizeof(taskName), "Task%d - %d", j + 1, i);
+
+			xTaskCreateDeadline(ComputingTask, taskName, configMINIMAL_STACK_SIZE * 10, params, tskIDLE_PRIORITY + 1, NULL, tasksDeadlines[numberOfPeriodicTasks]*i);
+		}	
+	}
+}
+
+void ComputingTaskPeriodic1(void *pvParameters) {
+    TickType_t xLastWakeTime;
+
+    // Initialize xLastWakeTime with the current time
+    xLastWakeTime = xTaskGetTickCount();
+
+    for (int j = 0; j < 10; j++) {
+        TickType_t start = xTaskGetTickCount();
+		int n = *((int*)pvParameters);
+		const char *taskName = pcTaskGetName(NULL);
+		printf("%s start time: %u\r\n", taskName, (int)start);
+		int res = 1;
+
+		for (int i = 1; i <= n; ++i) {
+			res *= i;
+		}
+
+		TickType_t end = xTaskGetTickCount();
+		printf("%s end time: %d\r\n", taskName, (int)end);
+		printf("%s elapsed time: %d\r\n", taskName, (int)(end - start));
+		char taskNameDict[10];
+		snprintf(taskNameDict, sizeof(taskNameDict), "Task1 - %d", j+1);
+		insertFinished(taskNameDict, (int)end);
+        vTaskDelayUntil(&xLastWakeTime, 180);
+    }
+	vTaskDelete(NULL); // delete the task before returning
+}
+
+void ComputingTaskPeriodic2(void *pvParameters) {
+    TickType_t xLastWakeTime;
+
+    // Initialize xLastWakeTime with the current time
+    xLastWakeTime = xTaskGetTickCount();
+
+    for (int j = 0; j < 8; j++) {
+        TickType_t start = xTaskGetTickCount();
+		int n = *((int*)pvParameters);
+		const char *taskName = pcTaskGetName(NULL);
+		printf("%s start time: %u\r\n", taskName, (int)start);
+		int res = 1;
+
+		for (int i = 1; i <= n; ++i) {
+			res *= i;
+		}
+
+		TickType_t end = xTaskGetTickCount();
+		printf("%s end time: %d\r\n", taskName, (int)end);
+		printf("%s elapsed time: %d\r\n", taskName, (int)(end - start));
+		char taskNameDict[10];
+		snprintf(taskNameDict, sizeof(taskNameDict), "Task2 - %d", j+1);
+		insertFinished(taskNameDict, (int)end);
+        vTaskDelayUntil(&xLastWakeTime, 260);
+    }
+	vTaskDelete(NULL); // delete the task before returning
+}
+
+void CheckResTasks() {
+	getAllKeysFinished(result);
+
+	if (resFlag == 1) {
+		int ctr_t1 = 0;
+		int ctr_t2 = 0;
+
+		for (int i = 0; i < numberOfPeriodicTasks * 10; ++i) {
+			char finishedKey[20];
+			char startingKey[20];
+
+			sprintf(finishedKey, "%d", getIndexFinished(result[i]));
+			sprintf(startingKey, "%d", getIndexStarting(result[i]));
+
+			if (strstr(result[i], "Task1 -") != NULL) {
+				ctr_t1++;
+				if ((getFinished(finishedKey) - getStarting(startingKey)) > p1 * ctr_t1) {
+					printf("%s has missed the deadline of %d\r\n", result[i], p1 * ctr_t1);
+				} else {
+					printf("%s has respected the deadline of %d\r\n", result[i], p1 * ctr_t1);
+				}
+			} else if (strstr(result[i], "Task2 -") != NULL) {
+				ctr_t2++;
+				if ((getFinished(finishedKey) - getStarting(startingKey)) > p2 * ctr_t2) {
+					printf("%s has missed the deadline of %d\r\n", result[i], p2 * ctr_t2);
+				} else {
+					printf("%s has respected the deadline of %d\r\n", result[i], p2 * ctr_t2);
+				}
+			}
+		}
+	} else if (resFlag == 2) {
+		for (int i = 0; i < numberOfTasks; ++i) {
+			char taskName[10];
+			snprintf(taskName, sizeof(taskName), "Task%d", i + 1);
+
+			if ((getFinished(taskName) - getStarting(taskName)) > tasksDeadlines[i])
+			{
+				printf("%s has missed the deadline\r\n", taskName);
+			}
+			else
+			{
+				printf("%s has respected the deadline\r\n", taskName);
+			}
+		}
+	}
+
+
+
+			
     vTaskDelete(NULL); // delete the task before returning
 }
