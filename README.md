@@ -145,6 +145,6 @@ Two task are created with the following parameters (we have estimated C in ticks
 
 | Task | C | T |
 |:----:|:----:|:----:|
-| Task1 | 86 | 180 |
-| Task2 | 168 | 260 |
+| Task1 | 95 | 180 |
+| Task2 | 180 | 260 |
 

@@ -122,8 +122,8 @@ void ComputingTaskPeriodic1(void *pvParameters);
 
 void ComputingTaskPeriodic2(void *pvParameters);
 
-int p1 = 180;
-int p2 = 260;
+int p1 = 240;
+int p2 = 330;
 
 int resFlag = 0;
 
@@ -647,7 +647,7 @@ void ComputingTaskPeriodic1(void *pvParameters) {
 		printf("%s end time: %d\r\n", taskName, (int)end);
 		printf("%s elapsed time: %d\r\n", taskName, (int)(end - start));
 		char taskNameDict[10];
-		snprintf(taskNameDict, sizeof(taskNameDict), "Task1 - %d", j+1);
+		snprintf(taskNameDict, sizeof(taskNameDict), "Task1-%d", j+1);
 		insertFinished(taskNameDict, (int)end);
         vTaskDelayUntil(&xLastWakeTime, 180);
     }
@@ -675,7 +675,7 @@ void ComputingTaskPeriodic2(void *pvParameters) {
 		printf("%s end time: %d\r\n", taskName, (int)end);
 		printf("%s elapsed time: %d\r\n", taskName, (int)(end - start));
 		char taskNameDict[10];
-		snprintf(taskNameDict, sizeof(taskNameDict), "Task2 - %d", j+1);
+		snprintf(taskNameDict, sizeof(taskNameDict), "Task2-%d", j+1);
 		insertFinished(taskNameDict, (int)end);
         vTaskDelayUntil(&xLastWakeTime, 260);
     }
@@ -685,26 +685,25 @@ void ComputingTaskPeriodic2(void *pvParameters) {
 void CheckResTasks() {
 	getAllKeysFinished(result);
 
+	printMapStarting();
+
 	if (resFlag == 1) {
 		int ctr_t1 = 0;
 		int ctr_t2 = 0;
 		for (int i = 0; i < numberOfPeriodicTasks * 10; ++i) {
-			char finishedKey[20];
-			char startingKey[20];
 
-			sprintf(finishedKey, "%d", getIndexFinished(result[i]));
-			sprintf(startingKey, "%d", getIndexStarting(result[i]));
+			const char* taskName = result[i];
 
-			if (strstr(result[i], "Task1 -") != NULL) {
+			if (strstr(result[i], "Task1-") != NULL) {
 				ctr_t1++;
-				if ((getFinished(finishedKey) - getStarting(startingKey)) > p1 * ctr_t1) {
+				if ((getFinished(taskName) - getStarting("T1")) > p1 * ctr_t1) {
 					printf("%s has missed the deadline of %d\r\n", result[i], p1 * ctr_t1);
 				} else {
 					printf("%s has respected the deadline of %d\r\n", result[i], p1 * ctr_t1);
 				}
-			} else if (strstr(result[i], "Task2 -") != NULL) {
+			} else if (strstr(result[i], "Task2-") != NULL) {
 				ctr_t2++;
-				if ((getFinished(finishedKey) - getStarting(startingKey)) > p2 * ctr_t2) {
+				if ((getFinished(taskName) - getStarting("T2")) > p2 * ctr_t2) {
 					printf("%s has missed the deadline of %d\r\n", result[i], p2 * ctr_t2);
 				} else {
 					printf("%s has respected the deadline of %d\r\n", result[i], p2 * ctr_t2);
@@ -713,7 +712,7 @@ void CheckResTasks() {
 		}
 	} else if (resFlag == 2) {
 		for (int i = 0; i < numberOfTasks; ++i) {
-			char taskName[10];
+			char taskName[20];
 			snprintf(taskName, sizeof(taskName), "Task%d", i + 1);
 
 			if ((getFinished(taskName) - getStarting(taskName)) > tasksDeadlines[i])

@@ -57,7 +57,7 @@ void insertFinished(const char key[], int value)
     else { // Key found 
         valuesFinished[index] = value; 
     } 
-} 
+}  
   
 // Function to get the value of a key in the starting map 
 int getStarting(const char key[]) 
