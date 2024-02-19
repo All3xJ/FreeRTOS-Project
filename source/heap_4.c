@@ -472,8 +472,7 @@ static void prvInsertBlockIntoFreeList( BlockLink_t * pxBlockToInsert ) /* PRIVI
         if( pxIterator->pxNextFreeBlock != pxEnd )
         {
             /* One big block from the two blocks. */
-            // here is the bug
-            //pxBlockToInsert->xBlockSize += pxIterator->pxNextFreeBlock->xBlockSize;
+            //pxBlockToInsert->xBlockSize += pxIterator->pxNextFreeBlock->xBlockSize;      // here is the bug after some allocations and disallocations it will execute and will place the wrong size.
             pxBlockToInsert->pxNextFreeBlock = pxIterator->pxNextFreeBlock->pxNextFreeBlock;
         }
         else
@@ -565,6 +564,7 @@ BlockLink_t* getFirstFreeBlock(){
 
 int memoryWatchdog(int xWantedSize){
     if (xFreeBytesRemaining-xWantedSize <= MIN_FREE_MEMORY_THRESHOLD){
+        printf("\nCan't allocate, block of size %d will overflow watchdog threshold.\n",xWantedSize);
         return -1;
     }
     return 0;

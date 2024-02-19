@@ -64,3 +64,39 @@ int memoryWatchdog(int xWantedSize){
 We've enhanced the `vPortFree` function to handle scenarios where attempts are made to free memory blocks that were never allocated due to the memory watchdog intervention.
 If `pvReturn` (or `pv`, representing the return value from `malloc`) equals -1, indicating a failed allocation attempt due to watchdog, the `vPortFree` function now ignores the free operation for such blocks. This prevents potential system crashes caused by attempting to free memory that was never allocated.
 This modification adds a layer of robustness to memory management, particularly in critical systems, by preventing crashes resulting from programmer oversights or failures to verify successful memory allocations before freeing, or even memory exhaustion attacks.
+
+## Fragmentation Testing
+
+To assess memory fragmentation, we've implemented a testing procedure within the `vTask1` function. This procedure involves allocating and deallocating memory blocks of random sizes and monitoring the fragmentation levels.
+
+```c
+void vTask1( void *pvParameters )
+{
+    int seed = 777777777777;
+	int iter = 0;
+	while(1){
+		printf("\n\nIter n. %d",iter);
+
+		int randNumA = rand_r(&seed) % 10000;
+		vPortGetHeapStats(&HeapStats);
+		printHeapStats(&HeapStats);
+		printf("Allocating %d\n",randNumA+16);
+		void* a = pvPortMalloc(randNumA);
+		vTaskDelay(100);
+        
+        // ... same for block B and C
+
+        vPortGetHeapStats(&HeapStats);
+		printHeapStats(&HeapStats);
+		printf("Freeing %d\n",randNumA+16);
+		vPortFree(a);
+		vTaskDelay(100);
+
+        // ...same for block B and C
+    }
+}
+```
+
+Inside `printHeapStats` we print information fragmentation ratio, calculated using the formula:
+`Fragmentation = (Total Free Memory - Size of Largest Free Block) / (Total Free Memory)`.
+We observe that the fragmentation level increases asymptotically towards 100% as more memory is allocated and deallocated over multiple iterations. This testing procedure provides valuable insights into the behavior of memory fragmentation within the system.
