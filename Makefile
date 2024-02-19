@@ -3,9 +3,9 @@ IMAGE := RTOSDemo.out
 SUB_MAKEFILE_DIR = ./library-makefiles
 
 # Change this lines with your compiler
-CC = /Applications/ARM/bin/arm-none-eabi-gcc-10.3.1
-LD = /Applications/ARM/bin/arm-none-eabi-gcc-10.3.1
-SIZE = /Applications/ARM/bin/arm-none-eabi-size
+CC = arm-none-eabi-gcc
+LD = arm-none-eabi-gcc	# I have to put gcc and not ld otherwise some options like cpu=cortex-m3 doesn't find them
+SIZE = arm-none-eabi-size
 MAKE = make
 
 CFLAGS += $(INCLUDE_DIRS) -nostartfiles -ffreestanding -mthumb -mcpu=cortex-m3 \
@@ -15,7 +15,6 @@ CFLAGS += $(INCLUDE_DIRS) -nostartfiles -ffreestanding -mthumb -mcpu=cortex-m3 \
 # Change this lines with to import the correct libraries (if needed)
 INCLUDE_DIRS += -I headers \
                 -I source \
-				-I /Applications/ARM/arm-none-eabi/include/c++/10.3.1 \
 
 # Source files
 SOURCE_DIR := source

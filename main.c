@@ -424,8 +424,6 @@ static void vCommandlineTask(void *pvParameters) {
 						indexSeed++;
 					}
 				}
-				sizeStarting = 0;
-				sizeFinished = 0;
 				doAllSeed(tasksParams, tasksDeadlines, numberOfTasks, (unsigned int)inputSeed);
 				CreateTasks();
 				resFlag = 2;
@@ -454,8 +452,6 @@ static void vCommandlineTask(void *pvParameters) {
 					printf("\r\n");
 					break;
 				}
-				sizeStarting = 0;
-				sizeFinished = 0;
 				CreateTasks();  
                 break;
 			case 6:
@@ -463,8 +459,6 @@ static void vCommandlineTask(void *pvParameters) {
 				xTaskCreateDeadline(ComputingTaskContextSwitch, "StartingT", configMINIMAL_STACK_SIZE * 10, params, tskIDLE_PRIORITY + 1, NULL, 200);
 				break;
 			case 7:
-				sizeStarting = 0;
-				sizeFinished = 0;
 				xTaskCreateDeadline(ComputingTaskPeriodic1, "T1", configMINIMAL_STACK_SIZE * 10, params2, tskIDLE_PRIORITY + 1, NULL, p1*1);
 				xTaskCreateDeadline(ComputingTaskPeriodic2, "T2", configMINIMAL_STACK_SIZE * 10, params3, tskIDLE_PRIORITY + 1, NULL, p2*1);
 				resFlag = 1;
