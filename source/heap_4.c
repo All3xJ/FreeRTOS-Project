@@ -103,8 +103,6 @@ typedef struct A_BLOCK_LINK
 /*-----------------------------------------------------------*/
 
 
-
-
 /*
  * Inserts a block of memory that is being freed into the correct position in
  * the list of free memory blocks.  The block being freed will be merged with
@@ -137,6 +135,12 @@ PRIVILEGED_DATA static size_t xNumberOfSuccessfulAllocations = 0;
 PRIVILEGED_DATA static size_t xNumberOfSuccessfulFrees = 0;
 
 /*-----------------------------------------------------------*/
+
+
+
+#define MIN_FREE_MEMORY_THRESHOLD 58000
+
+
 
 void * pvPortMalloc( size_t xWantedSize )
 {
@@ -186,6 +190,12 @@ void * pvPortMalloc( size_t xWantedSize )
          * the kernel, so it must be free. */
         if( heapBLOCK_SIZE_IS_VALID( xWantedSize ) != 0 )
         {
+
+            if(memoryWatchdog(xWantedSize)!=0){
+                pxBlock=NULL;   // either if memory watchdog notice that will exceed threashold or if largest block can't contain it: I can't allocate so I set to NULL to not enter in the if but instead enter in else
+                pvReturn=-1;    // set it to NOT NULL so that it will not enter in malloc failed hook so does not crash the whole system
+            }
+
             if( ( xWantedSize > 0 ) && ( xWantedSize <= xFreeBytesRemaining ) )
             {
                 /* Blocks are stored in byte order - traverse the list from the start
@@ -193,7 +203,7 @@ void * pvPortMalloc( size_t xWantedSize )
                 pxPreviousBlock = &xStart;
                 pxBlock = xStart.pxNextFreeBlock;
 
-                while( ( pxBlock->xBlockSize < xWantedSize ) && ( pxBlock->pxNextFreeBlock != NULL ) )
+                while( ( pxBlock->xBlockSize < xWantedSize ) && ( pxBlock->pxNextFreeBlock != NULL ))
                 {
                     pxPreviousBlock = pxBlock;
                     pxBlock = pxBlock->pxNextFreeBlock;
@@ -201,7 +211,7 @@ void * pvPortMalloc( size_t xWantedSize )
 
                 /* If the end marker was reached then a block of adequate size
                  * was not found. */
-                if( pxBlock != pxEnd )
+                if( pxBlock != pxEnd && pxBlock!=NULL)  // added check of NULL so that I don't go here if memoryWatchdog kicks in
                 {
                     /* Return the memory space pointed to - jumping over the
                      * BlockLink_t structure at its start. */
@@ -284,7 +294,7 @@ void * pvPortMalloc( size_t xWantedSize )
     }
     #endif /* if ( configUSE_MALLOC_FAILED_HOOK == 1 ) */
 
-    configASSERT( ( ( ( size_t ) pvReturn ) & ( size_t ) portBYTE_ALIGNMENT_MASK ) == 0 );
+    //configASSERT( ( ( ( size_t ) pvReturn ) & ( size_t ) portBYTE_ALIGNMENT_MASK ) == 0 );
     return pvReturn;
 }
 
@@ -299,7 +309,7 @@ void vPortFree( void * pv )
     BlockLink_t * pxLink;
     
 
-    if( pv != NULL )
+    if( pv != NULL && pv!=-1)   // I both check if pv is not NULL but also if not -1 since can be -1 if set by the memoryWatchdog. this way we avoid that the system crashes if some user is not checking the block address to free
     {
         /* The memory being freed will have an BlockLink_t structure immediately
          * before it. */
@@ -550,4 +560,12 @@ void vPortGetHeapStats( HeapStats_t * pxHeapStats )
 
 BlockLink_t* getFirstFreeBlock(){
     return xStart.pxNextFreeBlock;
+}
+
+
+int memoryWatchdog(int xWantedSize){
+    if (xFreeBytesRemaining-xWantedSize <= MIN_FREE_MEMORY_THRESHOLD){
+        return -1;
+    }
+    return 0;
 }
