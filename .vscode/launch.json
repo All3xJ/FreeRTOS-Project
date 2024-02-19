@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "c:/Users/simon/Desktop/GITLAB/group36",
-      "program": "c:/Users/simon/Desktop/GITLAB/group36/build/Debug/outDebug",
+      "cwd": "c:/Users/simon/Desktop/group36-modified-best-fit",
+      "program": "c:/Users/simon/Desktop/group36-modified-best-fit/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [

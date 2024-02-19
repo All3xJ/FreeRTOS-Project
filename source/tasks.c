@@ -1187,7 +1187,7 @@ static void prvAddNewTaskToReadyList( TCB_t * pxNewTCB )
          * from prvCheckTasksWaitingTermination which is called from Idle task. */
         if( pxTCB != pxCurrentTCB )
         {
-            prvDeleteTCB( pxTCB );
+            prvDeleteTCB( pxTCB );  // also deletes stack
         }
 
         /* Force a reschedule if it is the currently running task that has just
@@ -3972,7 +3972,7 @@ static void prvCheckTasksWaitingTermination( void )
             if( pxTCB->ucStaticallyAllocated == tskDYNAMICALLY_ALLOCATED_STACK_AND_TCB )
             {
                 /* Both the stack and TCB were allocated dynamically, so both
-                 * must be freed. */
+                 * must be freed. */    // it does this
                 vPortFreeStack( pxTCB->pxStack );
                 vPortFree( pxTCB );
             }
