@@ -114,8 +114,6 @@ void ContextSwtichTask(void *pvParameters);
 
 void ComputingTaskContextSwitch(void *pvParameters);
 
-void feasibility(int* cycles, int* periods, int size);
-
 char* result[numberOfPeriodicTasks*10];
 
 void ComputingTaskPeriodic1(void *pvParameters);
