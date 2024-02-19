@@ -8,7 +8,7 @@ The following sections highlight the changes made to the original codebase:
 ### Modification 1: Adjusting Memory Allocation
 
 In the memory allocation function `pvPortMalloc`, we made the following adjustments:
-
+   
 ```c
 void * pvPortMalloc( size_t xWantedSize )
 {
