@@ -127,6 +127,8 @@ int resFlag = 0;
 
 int startingEx7 = 0;
 
+TickType_t StartingTick;
+
 
 /*
  * Printf() output is sent to the serial port.  Initialise the serial hardware.
@@ -628,12 +630,8 @@ void CreatePeriodic() {
 }
 
 void ComputingTaskPeriodic1(void *pvParameters) {
-    TickType_t xLastWakeTime;
-
-    // Initialize xLastWakeTime with the current time
-    xLastWakeTime = xTaskGetTickCount();
-
-	startingEx7 = (int)xLastWakeTime;
+	StartingTick = xTaskGetTickCount();
+	startingEx7 = (int)StartingTick;
 
     for (int j = 0; j < 10; j++) {
         TickType_t start = xTaskGetTickCount();
@@ -652,18 +650,21 @@ void ComputingTaskPeriodic1(void *pvParameters) {
 		char taskNameDict[10];
 		snprintf(taskNameDict, sizeof(taskNameDict), "Task1-%d", j+1);
 		insertFinished(taskNameDict, (int)end);
-        vTaskDelayUntil(&xLastWakeTime, p1);
+        // int remainingTime = p1*(j+1) - (int)end - startingEx7;
+
+        // if (remainingTime > 0) {
+        //     vTaskDelay(remainingTime);
+        // }
+		// printf("%d\r\n", p1*(j+1) - (int)end + startingEx7);
+		vTaskDelay(p1*(j+1) - (int)end + startingEx7);
     }
 	vTaskDelete(NULL); // delete the task before returning
 }
 
 void ComputingTaskPeriodic2(void *pvParameters) {
-    TickType_t xLastWakeTime;
-
-    // Initialize xLastWakeTime with the current time
-    xLastWakeTime = xTaskGetTickCount();
 
     for (int j = 0; j < 8; j++) {
+		 // Initialize xLastWakeTime with the current time
         TickType_t start = xTaskGetTickCount();
 		int n = *((int*)pvParameters);
 		const char *taskName = pcTaskGetName(NULL);
@@ -680,7 +681,8 @@ void ComputingTaskPeriodic2(void *pvParameters) {
 		char taskNameDict[10];
 		snprintf(taskNameDict, sizeof(taskNameDict), "Task2-%d", j+1);
 		insertFinished(taskNameDict, (int)end);
-        vTaskDelayUntil(&xLastWakeTime, p2);
+		// printf("%d\r\n", p2*(j+1) - (int)end + startingEx7);
+        vTaskDelay(p2*(j+1) - (int)end + startingEx7);
     }
 	vTaskDelete(NULL); // delete the task before returning
 }
