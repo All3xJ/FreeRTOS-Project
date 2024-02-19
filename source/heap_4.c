@@ -188,8 +188,8 @@ void * pvPortMalloc( size_t xWantedSize )
         {
             if( ( xWantedSize > 0 ) && ( xWantedSize <= xFreeBytesRemaining ) )
             {
-                /* Traverse the list from the start (lowest address) block until
-                 * one of adequate size is found. */
+                /* Blocks are stored in byte order - traverse the list from the start
+                 * (smallest) block until one of adequate size is found. */
                 pxPreviousBlock = &xStart;
                 pxBlock = xStart.pxNextFreeBlock;
 
@@ -462,7 +462,8 @@ static void prvInsertBlockIntoFreeList( BlockLink_t * pxBlockToInsert ) /* PRIVI
         if( pxIterator->pxNextFreeBlock != pxEnd )
         {
             /* One big block from the two blocks. */
-            pxBlockToInsert->xBlockSize += pxIterator->pxNextFreeBlock->xBlockSize;
+            // here is the bug
+            //pxBlockToInsert->xBlockSize += pxIterator->pxNextFreeBlock->xBlockSize;
             pxBlockToInsert->pxNextFreeBlock = pxIterator->pxNextFreeBlock->pxNextFreeBlock;
         }
         else
@@ -544,3 +545,9 @@ void vPortGetHeapStats( HeapStats_t * pxHeapStats )
     taskEXIT_CRITICAL();
 }
 /*-----------------------------------------------------------*/
+
+
+
+BlockLink_t* getFirstFreeBlock(){
+    return xStart.pxNextFreeBlock;
+}
