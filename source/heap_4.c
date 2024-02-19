@@ -138,74 +138,157 @@ PRIVILEGED_DATA static size_t xNumberOfSuccessfulFrees = 0;
 
 /*-----------------------------------------------------------*/
 
-void *pvPortMalloc(size_t xWantedSize) {
-    BlockLink_t *pxBlock;
-    BlockLink_t *pxPreviousBlock;
-    BlockLink_t *pxLargestBlock = NULL;  
+void * pvPortMalloc( size_t xWantedSize )
+{
+    BlockLink_t * pxBlock;
+    BlockLink_t * pxPreviousBlock;
+    BlockLink_t * pxNewBlockLink;
+    void * pvReturn = NULL;
     size_t xAdditionalRequiredSize;
-    void *pvReturn = NULL;
 
     vTaskSuspendAll();
     {
-        if (pxEnd == NULL) {
+        /* If this is the first call to malloc then the heap will require
+         * initialisation to setup the list of free blocks. */
+        if( pxEnd == NULL )
+        {
             prvHeapInit();
         }
-
-        if (xWantedSize > 0) {
-            xAdditionalRequiredSize = xHeapStructSize + portBYTE_ALIGNMENT - (xWantedSize & portBYTE_ALIGNMENT_MASK);
-            if (heapADD_WILL_OVERFLOW(xWantedSize, xAdditionalRequiredSize) == 0) {
-                xWantedSize += xAdditionalRequiredSize;
-            } else {
-                xWantedSize = 0;
-            }
-        } else {
+        else
+        {
             mtCOVERAGE_TEST_MARKER();
         }
 
-        if (heapBLOCK_SIZE_IS_VALID(xWantedSize) != 0) {
-            pxPreviousBlock = &xStart;
-            pxBlock = xStart.pxNextFreeBlock;
+        if( xWantedSize > 0 )
+        {
+            /* The wanted size must be increased so it can contain a BlockLink_t
+             * structure in addition to the requested amount of bytes. Some
+             * additional increment may also be needed for alignment. */
+            xAdditionalRequiredSize = xHeapStructSize + portBYTE_ALIGNMENT - ( xWantedSize & portBYTE_ALIGNMENT_MASK );
 
-            while (pxBlock != pxEnd) {
-                if (heapBLOCK_IS_ALLOCATED(pxBlock) == 0 && pxBlock->xBlockSize >= xWantedSize) {
-                    if (pxLargestBlock == NULL || pxBlock->xBlockSize > pxLargestBlock->xBlockSize) { 
-                        pxLargestBlock = pxBlock;  
-                    }
-                }
-                pxPreviousBlock = pxBlock;
-                pxBlock = pxBlock->pxNextFreeBlock;
+            if( heapADD_WILL_OVERFLOW( xWantedSize, xAdditionalRequiredSize ) == 0 )
+            {
+                xWantedSize += xAdditionalRequiredSize;
             }
-
-            if (pxLargestBlock != NULL) { 
-                pvReturn = (void *)(((uint8_t *)pxLargestBlock) + xHeapStructSize);
-                pxPreviousBlock->pxNextFreeBlock = pxLargestBlock->pxNextFreeBlock;
-                if ((pxLargestBlock->xBlockSize - xWantedSize) > heapMINIMUM_BLOCK_SIZE) {
-                    BlockLink_t *pxNewBlockLink = (void *)(((uint8_t *)pxLargestBlock) + xWantedSize);
-                    pxNewBlockLink->xBlockSize = pxLargestBlock->xBlockSize - xWantedSize;
-                    pxLargestBlock->xBlockSize = xWantedSize;
-                    prvInsertBlockIntoFreeList(pxNewBlockLink);
-                }
-                xFreeBytesRemaining -= pxLargestBlock->xBlockSize;
-                heapALLOCATE_BLOCK(pxLargestBlock);
-                pxLargestBlock->pxNextFreeBlock = NULL;
-                xNumberOfSuccessfulAllocations++;
+            else
+            {
+                xWantedSize = 0;
             }
         }
+        else
+        {
+            mtCOVERAGE_TEST_MARKER();
+        }
+
+        /* Check the block size we are trying to allocate is not so large that the
+         * top bit is set.  The top bit of the block size member of the BlockLink_t
+         * structure is used to determine who owns the block - the application or
+         * the kernel, so it must be free. */
+        if( heapBLOCK_SIZE_IS_VALID( xWantedSize ) != 0 )
+        {
+            if( ( xWantedSize > 0 ) && ( xWantedSize <= xFreeBytesRemaining ) )
+            {
+                // I just need to check the first block since it's the largest
+                pxPreviousBlock = &xStart;
+                pxBlock = xStart.pxNextFreeBlock;
+
+                // while( ( pxBlock->xBlockSize < xWantedSize ) && ( pxBlock->pxNextFreeBlock != NULL ) )
+                // {
+                //     pxPreviousBlock = pxBlock;
+                //     pxBlock = pxBlock->pxNextFreeBlock;
+                // }
+                if(pxBlock->xBlockSize<xWantedSize){
+                    pxBlock=NULL;   // if largest block can't contain it I can't allocate so I set to NULL to not enter in the if but instead enter in else
+                }
+
+                /* If pxBlock is NULL then largest free block is not enough to contain the wantedSize. */
+                if( pxBlock != NULL )
+                {
+                    /* Return the memory space pointed to - jumping over the
+                     * BlockLink_t structure at its start. */
+                    pvReturn = ( void * ) ( ( ( uint8_t * ) pxPreviousBlock->pxNextFreeBlock ) + xHeapStructSize );
+
+                    /* This block is being returned for use so must be taken out
+                     * of the list of free blocks. */
+                    pxPreviousBlock->pxNextFreeBlock = pxBlock->pxNextFreeBlock;
+
+                    /* If the block is larger than required it can be split into
+                     * two. */
+                    if( ( pxBlock->xBlockSize - xWantedSize ) > heapMINIMUM_BLOCK_SIZE )
+                    {
+                        /* This block is to be split into two.  Create a new
+                         * block following the number of bytes requested. The void
+                         * cast is used to prevent byte alignment warnings from the
+                         * compiler. */
+                        pxNewBlockLink = ( void * ) ( ( ( uint8_t * ) pxBlock ) + xWantedSize );
+                        configASSERT( ( ( ( size_t ) pxNewBlockLink ) & portBYTE_ALIGNMENT_MASK ) == 0 );
+
+                        /* Calculate the sizes of two blocks split from the
+                         * single block. */
+                        pxNewBlockLink->xBlockSize = pxBlock->xBlockSize - xWantedSize;
+                        pxBlock->xBlockSize = xWantedSize;
+
+                        /* Insert the new block into the list of free blocks. */
+                        prvInsertBlockIntoFreeList( pxNewBlockLink );
+                    }
+                    else
+                    {
+                        mtCOVERAGE_TEST_MARKER();
+                    }
+
+                    xFreeBytesRemaining -= pxBlock->xBlockSize;
+
+                    if( xFreeBytesRemaining < xMinimumEverFreeBytesRemaining )
+                    {
+                        xMinimumEverFreeBytesRemaining = xFreeBytesRemaining;
+                    }
+                    else
+                    {
+                        mtCOVERAGE_TEST_MARKER();
+                    }
+
+                    /* The block is being returned - it is allocated and owned
+                     * by the application and has no "next" block. */
+                    heapALLOCATE_BLOCK( pxBlock );
+                    pxBlock->pxNextFreeBlock = NULL;
+                    xNumberOfSuccessfulAllocations++;
+                }
+                else
+                {
+                    mtCOVERAGE_TEST_MARKER();
+                }
+            }
+            else
+            {
+                mtCOVERAGE_TEST_MARKER();
+            }
+        }
+        else
+        {
+            mtCOVERAGE_TEST_MARKER();
+        }
+
+        traceMALLOC( pvReturn, xWantedSize );
     }
-    (void)xTaskResumeAll();
+    ( void ) xTaskResumeAll();
 
-#if ( configUSE_MALLOC_FAILED_HOOK == 1 )
-    if( pvReturn == NULL ) {
-        vApplicationMallocFailedHook();
-    } else {
-        mtCOVERAGE_TEST_MARKER();
+    #if ( configUSE_MALLOC_FAILED_HOOK == 1 )
+    {
+        if( pvReturn == NULL )
+        {
+            vApplicationMallocFailedHook();
+        }
+        else
+        {
+            mtCOVERAGE_TEST_MARKER();
+        }
     }
-#endif /* if ( configUSE_MALLOC_FAILED_HOOK == 1 ) */
+    #endif /* if ( configUSE_MALLOC_FAILED_HOOK == 1 ) */
 
-    configASSERT(((size_t)pvReturn & (size_t)portBYTE_ALIGNMENT_MASK) == 0);
-
+    configASSERT( ( ( ( size_t ) pvReturn ) & ( size_t ) portBYTE_ALIGNMENT_MASK ) == 0 );
     return pvReturn;
 }
+
 
 
 
@@ -349,46 +432,66 @@ static void prvHeapInit( void ) /* PRIVILEGED_FUNCTION */
 
 /*-----------------------------------------------------------*/
 
-static void prvInsertBlockIntoFreeList(BlockLink_t *pxBlockToInsert) PRIVILEGED_FUNCTION {
-    BlockLink_t *pxIterator, *pxPrevBlock = NULL;
-    size_t xRequiredSize = pxBlockToInsert->xBlockSize;
+static void prvInsertBlockIntoFreeList( BlockLink_t * pxBlockToInsert ) /* PRIVILEGED_FUNCTION */
+{
+    BlockLink_t * pxIterator;
+    uint8_t * puc;
 
-    // Find the largest free size 
-    for (pxIterator = &xStart; pxIterator->pxNextFreeBlock != pxEnd; pxIterator = pxIterator->pxNextFreeBlock) {
-        if (pxIterator->pxNextFreeBlock->xBlockSize >= xRequiredSize) {
-            pxPrevBlock = pxIterator;
-        } else {
-            break; 
+    /* Iterate through the list until a block with a larger size is found or the end is reached */
+    for( pxIterator = &xStart; pxIterator->pxNextFreeBlock->xBlockSize > pxBlockToInsert->xBlockSize && pxIterator->pxNextFreeBlock != pxEnd; pxIterator = pxIterator->pxNextFreeBlock )
+    {
+        /* Nothing to do here, just iterate to the right position. */
+    }
+
+    /* Merge blocks if possible */
+    puc = ( uint8_t * ) pxIterator;
+
+    if( ( puc + pxIterator->xBlockSize ) == ( uint8_t * ) pxBlockToInsert )
+    {
+        pxIterator->xBlockSize += pxBlockToInsert->xBlockSize;
+        pxBlockToInsert = pxIterator;
+    }
+    else
+    {
+        mtCOVERAGE_TEST_MARKER();
+    }
+
+    puc = ( uint8_t * ) pxBlockToInsert;
+
+    if( ( puc + pxBlockToInsert->xBlockSize ) == ( uint8_t * ) pxIterator->pxNextFreeBlock )
+    {
+        if( pxIterator->pxNextFreeBlock != pxEnd )
+        {
+            /* One big block from the two blocks. */
+            // here is the bug
+            //pxBlockToInsert->xBlockSize += pxIterator->pxNextFreeBlock->xBlockSize;
+            pxBlockToInsert->pxNextFreeBlock = pxIterator->pxNextFreeBlock->pxNextFreeBlock;
+        }
+        else
+        {
+            pxBlockToInsert->pxNextFreeBlock = pxEnd;
         }
     }
-
-    // Merge with the previous block if possible
-    if (pxPrevBlock != NULL && (pxPrevBlock->pxNextFreeBlock->xBlockSize + xRequiredSize) > heapMINIMUM_BLOCK_SIZE) {
-        pxPrevBlock->pxNextFreeBlock->xBlockSize += xRequiredSize;
-
-        // Update the pointer of the block to be inserted to point to the newly merged block
-        pxBlockToInsert = pxPrevBlock->pxNextFreeBlock;
-    } else {
-        // Insert after the previous block or at the beginning
-        pxBlockToInsert->pxNextFreeBlock = pxPrevBlock ? pxPrevBlock->pxNextFreeBlock : xStart.pxNextFreeBlock;
-        if (pxPrevBlock) {
-            pxPrevBlock->pxNextFreeBlock = pxBlockToInsert;
-        } else {
-            xStart.pxNextFreeBlock = pxBlockToInsert;
-        }
+    else
+    {
+        pxBlockToInsert->pxNextFreeBlock = pxIterator->pxNextFreeBlock;
     }
 
-    // Merge with the next block if possible 
-    if (pxBlockToInsert->pxNextFreeBlock != pxEnd &&
-        (pxBlockToInsert->xBlockSize + pxBlockToInsert->pxNextFreeBlock->xBlockSize) > heapMINIMUM_BLOCK_SIZE) {
-        BlockLink_t *pxNextBlock = pxBlockToInsert->pxNextFreeBlock;
-        pxBlockToInsert->xBlockSize += pxNextBlock->xBlockSize;
-        pxBlockToInsert->pxNextFreeBlock = pxNextBlock->pxNextFreeBlock;
+    /* Insert the block into the correct position */
+    /* If the block being inserted plugged a gab, so was merged with the block
+     * before and the block after, then it's pxNextFreeBlock pointer will have
+     * already been set, and should not be set here as that would make it point
+     * to itself. */
+    if( pxIterator != pxBlockToInsert )
+    {
+    pxBlockToInsert->pxNextFreeBlock = pxIterator->pxNextFreeBlock;
+    pxIterator->pxNextFreeBlock = pxBlockToInsert;
     }
-
-
+    else
+    {
+        mtCOVERAGE_TEST_MARKER();
+    }
 }
-
 
 /*-----------------------------------------------------------*/
 
@@ -443,3 +546,9 @@ void vPortGetHeapStats( HeapStats_t * pxHeapStats )
     taskEXIT_CRITICAL();
 }
 /*-----------------------------------------------------------*/
+
+
+
+BlockLink_t* getFirstFreeBlock(){
+    return xStart.pxNextFreeBlock;
+}
