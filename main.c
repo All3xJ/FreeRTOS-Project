@@ -721,9 +721,4 @@ void CheckResTasks() {
 			}
 		}
 	}
-
-
-
-			
-    vTaskDelete(NULL); // delete the task before returning
 }
