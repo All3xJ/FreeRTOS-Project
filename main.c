@@ -379,7 +379,7 @@ void doRandomMemoryTests(int iterations){
 
 			if (action == 0) {
 				// Allocation
-				size_t size = rand_r(&seed) % 2000 + 1;
+				size_t size = rand_r(&seed) % 5000 + 1;
 				allocations[i] = pvPortMalloc(size);
 				printf("Allocated block %d of size %d\n", i, size);
 			} else {
