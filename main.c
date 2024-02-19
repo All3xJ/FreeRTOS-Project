@@ -125,6 +125,9 @@ int p2 = 360;
 
 int resFlag = 0;
 
+int startingEx7 = 0;
+
+
 /*
  * Printf() output is sent to the serial port.  Initialise the serial hardware.
  */
@@ -630,11 +633,13 @@ void ComputingTaskPeriodic1(void *pvParameters) {
     // Initialize xLastWakeTime with the current time
     xLastWakeTime = xTaskGetTickCount();
 
+	startingEx7 = (int)xLastWakeTime;
+
     for (int j = 0; j < 10; j++) {
         TickType_t start = xTaskGetTickCount();
 		int n = *((int*)pvParameters);
 		const char *taskName = pcTaskGetName(NULL);
-		printf("%s start time: %u\r\n", taskName, (int)start);
+		printf("%s start time: %u\r\n", taskName, (int)start - startingEx7);
 		int res = 1;
 
 		for (int i = 1; i <= n; ++i) {
@@ -642,7 +647,7 @@ void ComputingTaskPeriodic1(void *pvParameters) {
 		}
 
 		TickType_t end = xTaskGetTickCount();
-		printf("%s end time: %d\r\n", taskName, (int)end);
+		printf("%s end time: %d\r\n", taskName, (int)end - startingEx7);
 		printf("%s elapsed time: %d\r\n", taskName, (int)(end - start));
 		char taskNameDict[10];
 		snprintf(taskNameDict, sizeof(taskNameDict), "Task1-%d", j+1);
@@ -662,7 +667,7 @@ void ComputingTaskPeriodic2(void *pvParameters) {
         TickType_t start = xTaskGetTickCount();
 		int n = *((int*)pvParameters);
 		const char *taskName = pcTaskGetName(NULL);
-		printf("%s start time: %u\r\n", taskName, (int)start);
+		printf("%s start time: %u\r\n", taskName, (int)start - startingEx7);
 		int res = 1;
 
 		for (int i = 1; i <= n; ++i) {
@@ -670,7 +675,7 @@ void ComputingTaskPeriodic2(void *pvParameters) {
 		}
 
 		TickType_t end = xTaskGetTickCount();
-		printf("%s end time: %d\r\n", taskName, (int)end);
+		printf("%s end time: %d\r\n", taskName, (int)end - startingEx7);
 		printf("%s elapsed time: %d\r\n", taskName, (int)(end - start));
 		char taskNameDict[10];
 		snprintf(taskNameDict, sizeof(taskNameDict), "Task2-%d", j+1);
@@ -682,8 +687,6 @@ void ComputingTaskPeriodic2(void *pvParameters) {
 
 void CheckResTasks() {
 	getAllKeysFinished(result);
-
-	printMapStarting();
 
 	if (resFlag == 1) {
 		int ctr_t1 = 0;
