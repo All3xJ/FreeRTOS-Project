@@ -28,10 +28,10 @@ Memory Watchdog permits to not allocate memory if exceeds a specific threshold: 
 
 ### [cortex_MPS2-genova](https://baltig.polito.it/caos2023/group36/-/blob/CORTEX_MPS2-genova)
 In this branch, several functionalities have been implemented: 
-- **UART Command Line**: a command line for writing and reading data through UART
+- **UART Command Line**: a command line for writing and reading data through UART, using interrupts
 - **CPU Usage Statistics**: provide runtime insights
-- **Tickless idle mode**: designed to minimize power consumption by allowing the board to enter a low-power state during idle periods, and lastly
-- An additional feature for **LED** Control.
+- **Tickless idle mode**: designed to minimize power consumption by allowing the board to enter a low-power state during idle periods
+- Controlling **LED** playing animations.
 
 ### [CORTEX_MPS2-Moscato](https://baltig.polito.it/caos2023/group36/-/tree/CORTEX_MPS2-Moscato)
 In this branch the focus is on the utilization of **notifications**, which serve as a lightweight inter-task communication mechanism provided by FreeRTOS. Notifications enable tasks to interact with each other without the need for a separate communication object.
