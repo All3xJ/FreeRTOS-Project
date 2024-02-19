@@ -103,8 +103,6 @@ typedef struct A_BLOCK_LINK
 /*-----------------------------------------------------------*/
 
 
-
-
 /*
  * Inserts a block of memory that is being freed into the correct position in
  * the list of free memory blocks.  The block being freed will be merged with
@@ -137,6 +135,12 @@ PRIVILEGED_DATA static size_t xNumberOfSuccessfulAllocations = 0;
 PRIVILEGED_DATA static size_t xNumberOfSuccessfulFrees = 0;
 
 /*-----------------------------------------------------------*/
+
+
+
+#define MIN_FREE_MEMORY_THRESHOLD 30000
+
+
 
 void * pvPortMalloc( size_t xWantedSize )
 {
@@ -186,23 +190,42 @@ void * pvPortMalloc( size_t xWantedSize )
          * the kernel, so it must be free. */
         if( heapBLOCK_SIZE_IS_VALID( xWantedSize ) != 0 )
         {
+
+            if(memoryWatchdog(xWantedSize)!=0){
+                // pxBlock=NULL;   // either if memory watchdog notice that will exceed threashold or if largest block can't contain it: I can't allocate so I set to NULL to not enter in the if but instead enter in else
+                // pvReturn=-1;    // set it to NOT NULL so that it will not enter in malloc failed hook so does not crash the whole system
+                ( void ) xTaskResumeAll();  // I have to resume scheduler
+                return -1;                  // return -1 so skips allocation, to signal that watchdog kicked in so malloc failed
+            }
+
             if( ( xWantedSize > 0 ) && ( xWantedSize <= xFreeBytesRemaining ) )
             {
-                // I just need to check the first block since it's the largest
+                /* Blocks are stored in byte order - traverse the list from the start
+                 * (smallest) block until one of adequate size is found. */
                 pxPreviousBlock = &xStart;
                 pxBlock = xStart.pxNextFreeBlock;
+                BlockLink_t *tmpPxPreviousBlock = NULL;
+                BlockLink_t *tmpPxBlock = NULL;
 
-                // while( ( pxBlock->xBlockSize < xWantedSize ) && ( pxBlock->pxNextFreeBlock != NULL ) )
-                // {
-                //     pxPreviousBlock = pxBlock;
-                //     pxBlock = pxBlock->pxNextFreeBlock;
-                // }
-                if(pxBlock->xBlockSize<xWantedSize){
-                    pxBlock=NULL;   // if largest block can't contain it I can't allocate so I set to NULL to not enter in the if but instead enter in else
-                }
+                do
+                {
+                    // printf("\n\n%d\n\n",pxBlock->xBlockSize);
+                    // printf("\n\n%d\n\n",tmpPxBlock->xBlockSize);
+                    // printf("\n\n%d\n\n",pxBlock->xBlockSize);
+                    if(( pxBlock->xBlockSize>=xWantedSize && (tmpPxBlock->xBlockSize < pxBlock->xBlockSize || tmpPxBlock==NULL ))){ // if i-th block can contain wantedsize and it's smaller than previously saved one, then
+                        tmpPxPreviousBlock = pxPreviousBlock;
+                        tmpPxBlock = pxBlock;
+                    }
+                    pxPreviousBlock = pxBlock;
+                    pxBlock = pxBlock->pxNextFreeBlock;
+                }while(pxBlock->pxNextFreeBlock != NULL );
 
-                /* If pxBlock is NULL then largest free block is not enough to contain the wantedSize. */
-                if( pxBlock != NULL )
+                pxPreviousBlock = tmpPxPreviousBlock;
+                pxBlock = tmpPxBlock;
+
+                /* If the end marker was reached then a block of adequate size
+                 * was not found. */
+                if( pxBlock != pxEnd)
                 {
                     /* Return the memory space pointed to - jumping over the
                      * BlockLink_t structure at its start. */
@@ -300,7 +323,7 @@ void vPortFree( void * pv )
     BlockLink_t * pxLink;
     
 
-    if( pv != NULL )
+    if( pv != NULL && pv!=-1)   // I both check if pv is not NULL but also if not -1 since can be -1 if set by the memoryWatchdog. this way we avoid that the system crashes if some user is not checking the block address to free
     {
         /* The memory being freed will have an BlockLink_t structure immediately
          * before it. */
@@ -436,60 +459,61 @@ static void prvInsertBlockIntoFreeList( BlockLink_t * pxBlockToInsert ) /* PRIVI
 {
     BlockLink_t * pxIterator;
     uint8_t * puc;
-
-    /* Iterate through the list until a block with a smaller size is found or the end is reached */
-    for( pxIterator = &xStart; pxIterator->pxNextFreeBlock->xBlockSize > pxBlockToInsert->xBlockSize && pxIterator->pxNextFreeBlock != pxEnd; pxIterator = pxIterator->pxNextFreeBlock )
+    /* Iterate through the list until a block is found that has a higher address
+     * than the block being inserted. */    // THIS IS FIRST-FIT
+    for( pxIterator = &xStart; pxIterator->pxNextFreeBlock < pxBlockToInsert; pxIterator = pxIterator->pxNextFreeBlock )
     {
         /* Nothing to do here, just iterate to the right position. */
     }
 
-    // /* Merge blocks if possible */
-    // puc = ( uint8_t * ) pxIterator;
+    /* Do the block being inserted, and the block it is being inserted after
+     * make a contiguous block of memory? */
+    puc = ( uint8_t * ) pxIterator;
 
-    // if( ( puc + pxIterator->xBlockSize) == ( uint8_t * ) pxBlockToInsert )
-    // {
-    //     pxIterator->xBlockSize += pxBlockToInsert->xBlockSize;
-    //     pxBlockToInsert = pxIterator;
-    // }
-    // else
-    // {
-    //     mtCOVERAGE_TEST_MARKER();
-    // }
+    if( ( puc + pxIterator->xBlockSize ) == ( uint8_t * ) pxBlockToInsert )
+    {
+        pxIterator->xBlockSize += pxBlockToInsert->xBlockSize;
+        pxBlockToInsert = pxIterator;
+    }
+    else
+    {
+        mtCOVERAGE_TEST_MARKER();
+    }
 
-    // puc = ( uint8_t * ) pxBlockToInsert;
+    /* Do the block being inserted, and the block it is being inserted before
+     * make a contiguous block of memory? */
+    puc = ( uint8_t * ) pxBlockToInsert;
 
-    // if( ( puc + pxBlockToInsert->xBlockSize ) == ( uint8_t * ) pxIterator->pxNextFreeBlock )
-    // {
-    //     if( pxIterator->pxNextFreeBlock != pxEnd )
-    //     {
-    //         /* One big block from the two blocks. */
-    //         //pxBlockToInsert->xBlockSize += pxIterator->pxNextFreeBlock->xBlockSize ;    // here is bug. after some allocations and disallocations it will execute and will place the wrong size.
-    //         pxBlockToInsert->pxNextFreeBlock = pxIterator->pxNextFreeBlock->pxNextFreeBlock;
-    //     }
-    //     else
-    //     {
-    //         pxBlockToInsert->pxNextFreeBlock = pxEnd;
-    //     }
-    // }
-    // else
-    // {
-    //     pxBlockToInsert->pxNextFreeBlock = pxIterator->pxNextFreeBlock;
-    // }
+    if( ( puc + pxBlockToInsert->xBlockSize ) == ( uint8_t * ) pxIterator->pxNextFreeBlock )
+    {
+        if( pxIterator->pxNextFreeBlock != pxEnd )
+        {
+            /* Form one big block from the two blocks. */
+            pxBlockToInsert->xBlockSize += pxIterator->pxNextFreeBlock->xBlockSize;
+            pxBlockToInsert->pxNextFreeBlock = pxIterator->pxNextFreeBlock->pxNextFreeBlock;
+        }
+        else
+        {
+            pxBlockToInsert->pxNextFreeBlock = pxEnd;
+        }
+    }
+    else
+    {
+        pxBlockToInsert->pxNextFreeBlock = pxIterator->pxNextFreeBlock;
+    }
 
-    /* Insert the block into the correct position */
     /* If the block being inserted plugged a gab, so was merged with the block
      * before and the block after, then it's pxNextFreeBlock pointer will have
      * already been set, and should not be set here as that would make it point
      * to itself. */
-    // if( pxIterator != pxBlockToInsert )
-    // {
-    pxBlockToInsert->pxNextFreeBlock = pxIterator->pxNextFreeBlock;
-    pxIterator->pxNextFreeBlock = pxBlockToInsert;
-    // }
-    // else
-    // {
-    //     mtCOVERAGE_TEST_MARKER();
-    // }
+    if( pxIterator != pxBlockToInsert )
+    {
+        pxIterator->pxNextFreeBlock = pxBlockToInsert;
+    }
+    else
+    {
+        mtCOVERAGE_TEST_MARKER();
+    }
 }
 
 /*-----------------------------------------------------------*/
@@ -550,4 +574,13 @@ void vPortGetHeapStats( HeapStats_t * pxHeapStats )
 
 BlockLink_t* getFirstFreeBlock(){
     return xStart.pxNextFreeBlock;
+}
+
+
+int memoryWatchdog(int xWantedSize){
+    if (xFreeBytesRemaining-xWantedSize <= MIN_FREE_MEMORY_THRESHOLD){
+        printf("\nCan't allocate, block of size %d will overflow watchdog threshold.\n",xWantedSize);
+        return -1;
+    }
+    return 0;
 }

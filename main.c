@@ -378,16 +378,42 @@ void vTask1( void *pvParameters )
 		void* c = pvPortMalloc(randNumC);
 		vTaskDelay(100);
 
+		int randNumD = rand_r(&seed) % 10000;
 		vPortGetHeapStats(&HeapStats);
 		printHeapStats(&HeapStats);
-		printf("Freeing the %d block\n",randNumA);
-		vPortFree(a);
+		printf("Malloc of %d\n",randNumD);
+		void* d = pvPortMalloc(randNumD);
+		vTaskDelay(100);
+
+		int randNumE = rand_r(&seed) % 10000;
+		vPortGetHeapStats(&HeapStats);
+		printHeapStats(&HeapStats);
+		printf("Malloc of %d\n",randNumE);
+		void* e = pvPortMalloc(randNumE);
 		vTaskDelay(100);
 
 		vPortGetHeapStats(&HeapStats);
 		printHeapStats(&HeapStats);
 		printf("Freeing the %d block\n",randNumB);
 		vPortFree(b);
+		vTaskDelay(100);
+
+		vPortGetHeapStats(&HeapStats);
+		printHeapStats(&HeapStats);
+		printf("Freeing the %d block\n",randNumD);
+		vPortFree(d);
+		vTaskDelay(100);
+
+		vPortGetHeapStats(&HeapStats);
+		printHeapStats(&HeapStats);
+		printf("Freeing the %d block\n",randNumE);
+		vPortFree(e);
+		vTaskDelay(100);
+
+		vPortGetHeapStats(&HeapStats);
+		printHeapStats(&HeapStats);
+		printf("Freeing the %d block\n",randNumA);
+		vPortFree(a);
 		vTaskDelay(100);
 
 		vPortGetHeapStats(&HeapStats);
