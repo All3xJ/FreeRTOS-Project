@@ -471,7 +471,7 @@ static void vCommandlineTask(void *pvParameters) {
             default:
                 printf("\nWrong selection\n");
         }
-		vTaskDelay(2500);
+		vTaskDelay(2800);
     }
 }
 
