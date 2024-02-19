@@ -647,7 +647,7 @@ void ComputingTaskPeriodic1(void *pvParameters) {
 		char taskNameDict[10];
 		snprintf(taskNameDict, sizeof(taskNameDict), "Task1-%d", j+1);
 		insertFinished(taskNameDict, (int)end);
-        vTaskDelayUntil(&xLastWakeTime, 180);
+        vTaskDelayUntil(&xLastWakeTime, p1);
     }
 	vTaskDelete(NULL); // delete the task before returning
 }
@@ -675,7 +675,7 @@ void ComputingTaskPeriodic2(void *pvParameters) {
 		char taskNameDict[10];
 		snprintf(taskNameDict, sizeof(taskNameDict), "Task2-%d", j+1);
 		insertFinished(taskNameDict, (int)end);
-        vTaskDelayUntil(&xLastWakeTime, 260);
+        vTaskDelayUntil(&xLastWakeTime, p2);
     }
 	vTaskDelete(NULL); // delete the task before returning
 }
