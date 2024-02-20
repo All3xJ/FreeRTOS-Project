@@ -48,15 +48,15 @@ The primary objective is to demonstrate how Event Groups can be employed for syn
 This branch contains the implementation of an example demonstrating the usage of **mutexes** in freeRTOS in order to coordinate 2 tasks: producer and consumer.
 
 ### [no-coaleshing-best-fit ](https://baltig.polito.it/caos2023/group36/-/tree/no-coaleshing-best-fit)
-A **modified Best-fit** version that does not implement coaleshing, so it's faster in finding the block to select for allocation because the largest is the first one in the free block list(which is sorted by block size). The overhead is only given by reordering the list.
+A **modified Best-fit** version that does not implement coaleshing, so it's faster in finding the block to select for allocation because the smallest is the first one in the free block list(which is sorted by block size). The overhead is only given by reordering the list.
 
 ### [heap4_best_fit_allocator](https://baltig.polito.it/caos2023/group36/-/tree/heap4_best_fit_allocator)
 This branch contains a first and bugged version of the implementation of **Best-Fit algorithm** for memory management. 
-This version is an example of Memory WatchDog called by the task.
+
 
 ### [heap4_worst_fit_allocator](https://baltig.polito.it/caos2023/group36/-/tree/heap4_worst_fit_allocator)
-This branch contains a first and bugged version of the implementation of **Worst-Fit algorithm** for memory management. 
-This version is an example of Memory WatchDog called by the task.
+This branch contains a first and bugged version of the implementation of **Worst-Fit algorithm** for memory management.
+
 
 
 
