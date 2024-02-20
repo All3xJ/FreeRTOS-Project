@@ -1,0 +1,50 @@
+%% Packages:
+\usepackage{minted}
+\usepackage{amsmath}
+\usepackage[document]{ragged2e}
+\usepackage{titlesec}
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{listings}
+\usepackage{subcaption}
+\usepackage[dvipsnames]{xcolor}
+\usepackage[T1]{fontenc}
+\usepackage{helvet}
+\usepackage[hidelinks]{hyperref}
+\usepackage[margin=2cm]{geometry}
+\usepackage{amssymb}
+\usepackage{enumitem}
+\usepackage{comment}
+\usepackage{soul}
+\usepackage{listings}
+\usepackage{xcolor}
+
+
+%% Personalized adjustements: 
+
+% Math operator:
+\DeclareMathOperator{\sech}{sech}
+
+% VUB colors: 
+\definecolor{orange}{RGB}{234, 82, 0} 
+\definecolor{blue}{RGB}{26, 55, 101}
+
+% Margins:
+\addtolength{\skip\footins}{0.3 cm}
+\renewcommand*\footnoterule{}
+
+% Adjustement of section, subsection & subsubsection: 
+
+\titleformat{\section}[block]
+{\Large\bfseries \fontfamily{lmodern}\selectfont \color{orange}}
+{\thesection}{0.5cm}{}
+
+\titleformat{\subsection}[block]
+{\large\bfseries \fontfamily{lmodern}\selectfont \color{blue}}
+{\thesubsection}{0.5cm}{}
+
+\titleformat{\subsubsection}[block]
+{\small\bfseries \fontfamily{lmodern}\selectfont\color{blue}}
+{\thesubsubsection}{0.5cm}{}
+
