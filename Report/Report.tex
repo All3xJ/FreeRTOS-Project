@@ -5,13 +5,13 @@ We chose FreeRTOS for our project as we found the documentation and source code 
 \subsection{Demo Selection and Emulated Board}
 We chose the demo emulating the MPS2-AN385 board, which has a Cortex M3 CPU. This is the recommended demo to start any FreeRTOS project with QEMU.
 
-%aggiungere info board?
+
 
 \section{Creation of the tutorial}
 In line with the initial requirement of creating a tutorial we have developed a step-by-step guide. 
 The guide is designed for various user type (Linux, Mac, Windows), providing detailed instructions on how to use FreeRTOS on QEMU and the essential tools needed to ensure the proper execution of our project.
 
-%review this part
+
 
 \section{Practical examples demonstrating the functionality of the operating system}
 We've implemented different examples and they are briefly described below:
@@ -43,7 +43,7 @@ This example shows the use of mutexes in FreeRTOS in order to coordinate 2 tasks
 \subsection{Event Groups in FreeRTOS}%review this part EMA
 In this branch a simple example is implemented to showcase the utilization of Event Groups functionality.
 The primary objective is to demonstrate how Event Groups can be employed for synchronization between tasks, allowing efficient communication and coordination in the FreeRTOS environment.
-%%aggiungere effettivamente funzionamento
+
 
 
 
@@ -76,7 +76,7 @@ The greater the parameter, the longer the execution time of the task; this is a 
 Now, tasks can be rearranged based on their execution time.
 With LJF, tasks are rearranged in descending order (from slowest to fastest), while for SJF, tasks are ordered from the fastest to the slowest.
 
-%aggiungi conclusione
+
 
 
 \subsection{Earliest Deadline First scheduling}
